@@ -63,8 +63,6 @@ class MomentsList {
         this.nextBtn = list.querySelector('.h-content-btn.next');
         this.currentIndex = 0;
 
-        console.log(this.nextBtn)
-
         this.setInitialPositions();
         this.nextBtn.addEventListener('click', this.nextCard.bind(this));
         this.prevBtn.addEventListener('click', this.prevCard.bind(this));

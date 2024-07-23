@@ -4,14 +4,17 @@ import {gsap} from "gsap";
 
  */
 let mm = gsap.matchMedia();
+let mx = gsap.matchMedia();
 
 const namesWrappers = Array.from(document.querySelectorAll('.names-wrapper'));
+
+let scroller
 
 let completedCount = 0;
 document.addEventListener('htmx:afterRequest', function(evt) {
     completedCount++;
     if (completedCount === namesWrappers.length) {
-        console.log('Hello! All content has been fetched.');
+        //console.log('Hello! All content has been fetched.');
         removeAll().then(() => {
            setTimeout(() => {
                const activate = ()=>{
@@ -32,6 +35,9 @@ document.addEventListener('htmx:afterRequest', function(evt) {
                            });
                        }
 
+                       updateScroll() {
+                           ScrollTrigger.refresh()
+                       }
 
                        getScrollAmount(){
                            this.scrollWidth = this.scrollContainer.scrollWidth;
@@ -60,7 +66,7 @@ document.addEventListener('htmx:afterRequest', function(evt) {
                    }
 
 
-                   new Scroller();
+                   scroller = new Scroller();
 
 
                    class MomentsList {
@@ -73,8 +79,6 @@ document.addEventListener('htmx:afterRequest', function(evt) {
                            this.currentIndex = 0;
 
                            gsap.set(this.itemDetails, {opacity: 0, visibility: 'hidden'})
-
-                           console.log(this.nextBtn)
 
                            this.setInitialPositions();
                            this.nextBtn.addEventListener('click', this.nextCard.bind(this));
@@ -195,7 +199,7 @@ const removeAll = () => {
         const removals = namesWrappers.map(wrapper => {
             return new Promise((innerResolve) => {
                 if(wrapper.querySelector('.w-dyn-empty')){
-                    wrapper.closest('.ind-item').remove();
+                    wrapper.closest('.archival-process-item').remove();
                 }
                 innerResolve();
             });
@@ -203,9 +207,104 @@ const removeAll = () => {
 
         Promise.all(removals).then(() => {
             resolve();
+
+            document.querySelectorAll('.archive-process-num').forEach((num, index) => {
+                num.textContent = String(index + 1).padStart(2, '0');
+            });
         });
     });
 }
+
+const archiveItems = document.querySelectorAll('.archival-process-item');
+
+archiveItems.forEach((item) => {
+    let isExpanded = false;
+
+    item.addEventListener('click', () => {
+        const content = item.querySelector('.archive-process-content');
+        const otherContents = Array.from(archiveItems)
+            .filter(otherItem => otherItem !== item)
+            .map(otherItem => otherItem.querySelector('.archive-process-content'));
+
+        if (isExpanded) {
+            mx.add('(min-width:768px)', () => {
+                gsap.to(content, {
+                    width: '0rem',
+                    duration: 0.5,
+                    ease: "power2.out",
+                    immediateRender: false,
+                    onComplete: () => {
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 0);
+                        }
+                    }
+                });
+            });
+
+            mx.add('(max-width:767px)', () => {
+                gsap.to(content, {
+                    height: '0rem',
+                    duration: 0.5,
+                    ease: "power2.out",
+                    immediateRender: false,
+                    onComplete: () => {
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 0);
+                        }
+                    }
+                });
+            });
+
+            isExpanded = false;
+        } else {
+            mx.add('(min-width:768px)', () => {
+                gsap.to(otherContents, {
+                    width: '0rem',
+                    duration: 0.5,
+                    ease: "power2.out",
+                    immediateRender: false,
+                });
+
+                gsap.to(content, {
+                    width: '100%',
+                    duration: 0.5,
+                    ease: "power2.out",
+                    immediateRender: false,
+
+                    onComplete: () => {
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 50);
+                        }
+                    }
+                });
+            });
+
+            mx.add('(max-width:767px)', () => {
+                gsap.to(otherContents, {
+                    height: '0rem',
+                    duration: 0.5,
+                    ease: "power2.out",
+                    immediateRender: false,
+                });
+
+                gsap.to(content, {
+                    height: 'auto',
+                    duration: 0.5,
+                    ease: "power2.out",
+                    immediateRender: false,
+                    onComplete: () => {
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 50);
+                        }
+                    }
+                });
+            });
+
+            isExpanded = true;
+        }
+    });
+});
+
 
 
 

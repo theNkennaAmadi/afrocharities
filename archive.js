@@ -1,9 +1,11 @@
 /*
-import {ScrollTrigger} from "gsap/ScrollTrigger";
 import {gsap} from "gsap";
+import {ScrollTrigger} from "gsap/ScrollTrigger";
 import Swiper from "swiper";
 
  */
+
+
 let mm = gsap.matchMedia();
 let mx = gsap.matchMedia();
 
@@ -54,11 +56,26 @@ class Scroller {
         // Listen for resize events
         window.addEventListener('resize', () => {
             ScrollTrigger.refresh();
-        });
+        })
     }
 
     updateScroll() {
+        const newScrollAmount = this.getScrollAmount();
+
+        /*
+        ScrollTrigger.getAll().forEach(st => {
+            if (st.vars.trigger === this.scrollWrapper) {
+                st.vars.end = `+=${newScrollAmount * -1}`;
+                 st.refresh(true);  // Force recalculation of the ScrollTrigger
+               // st.update();  // Force update of the ScrollTrigger
+            }
+        });
+
+         */
+
         ScrollTrigger.refresh()
+
+
     }
 
     getScrollAmount(){
@@ -68,24 +85,26 @@ class Scroller {
 
     initHorScroll() {
         mm.add('(min-width:768px)', () => {
-            this.scrollTrigger = ScrollTrigger.create({
-                animation: gsap.to(this.scrollContainer, {
+            let scrollTween= gsap.to(this.scrollContainer, {
                     x: () => this.getScrollAmount(),
                     duration: 1,
-                    ease: "none"
-                }),
-                trigger: this.scrollWrapper,
-                pin: true,
-                scrub: 1,
-                start: 'top top',
-                end: () => `+=${this.getScrollAmount() * -1}`,
-                invalidateOnRefresh: true,
-                onUpdate: (self) => {
-                    const progress = self.progress * 100;
-                    gsap.to('.scroll-indicator', {width: `${progress}%`} )
-                }
-            });
+                    ease: "none",
+                    scrollTrigger:{
+                        trigger: this.scrollWrapper,
+                        pin: true,
+                        scrub: 1,
+                        start: 'top top',
+                        end: () => `+=${this.getScrollAmount() * -1}`,
+                        invalidateOnRefresh: true,
+                        onUpdate: (self) => {
+                            const progress = self.progress * 100;
+                            gsap.to('.scroll-indicator', {width: `${progress}%`} )
+                        }
+                    }
+                });
+
         });
+
     }
 }
 
@@ -201,9 +220,10 @@ const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
 momentsList.forEach((list) => new MomentsList(list));
 
 
+
 const archiveItems = document.querySelectorAll('.archival-process-item');
 
-archiveItems.forEach((item, index) => {
+archiveItems.forEach((item) => {
     let isExpanded = false;
 
     item.addEventListener('click', () => {
@@ -213,65 +233,85 @@ archiveItems.forEach((item, index) => {
             .map(otherItem => otherItem.querySelector('.archive-process-content'));
 
         if (isExpanded) {
-            // If already expanded, close this item
             mx.add('(min-width:768px)', () => {
                 gsap.to(content, {
                     width: '0rem',
                     duration: 0.5,
                     ease: "power2.out",
+                    immediateRender: false,
                     onComplete: () => {
-                       // if (scroller) scroller.updateScroll()
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 0);
+                        }
                     }
                 });
-            })
+            });
 
             mx.add('(max-width:767px)', () => {
                 gsap.to(content, {
                     height: '0rem',
                     duration: 0.5,
                     ease: "power2.out",
+                    immediateRender: false,
+                    onComplete: () => {
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 0);
+                        }
+                    }
                 });
-            })
+            });
 
             isExpanded = false;
         } else {
             mx.add('(min-width:768px)', () => {
-                // Close all other items
                 gsap.to(otherContents, {
                     width: '0rem',
                     duration: 0.5,
-                    ease: "power2.out"
+                    ease: "power2.out",
+                    immediateRender: false,
                 });
 
-                // Open this item
                 gsap.to(content, {
                     width: '36rem',
                     duration: 1,
                     ease: "power2.out",
+                    immediateRender: false,
+
                     onComplete: () => {
-                       // if (scroller) scroller.updateScroll()
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 50);
+                        }
                     }
                 });
-            })
+            });
+
             mx.add('(max-width:767px)', () => {
-                // Close all other items
                 gsap.to(otherContents, {
                     height: '0rem',
                     duration: 0.5,
-                    ease: "power2.out"
+                    ease: "power2.out",
+                    immediateRender: false,
                 });
 
-                // Open this item
                 gsap.to(content, {
                     height: 'auto',
                     duration: 1,
                     ease: "power2.out",
+                    immediateRender: false,
+                    onComplete: () => {
+                        if (scroller) {
+                            setTimeout(() => scroller.updateScroll(), 50);
+                        }
+                    }
                 });
-            })
+            });
 
             isExpanded = true;
         }
     });
 });
+
+
+
 
 
