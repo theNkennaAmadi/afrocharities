@@ -6,7 +6,7 @@ import Swiper from 'swiper/bundle';
 
  */
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 let mmMain = gsap.matchMedia();
 let mm = gsap.matchMedia();
 
@@ -138,31 +138,56 @@ class Scroller {
     init() {
         this.initScroll();
         this.initResize();
+        this.initClickScroll();
     }
 
     initResize(){
         window.addEventListener('resize', () => {
             gsap.set('.content-block', {
-                x: (index)=> index > 0 ? window.innerWidth - (convertPixels(2)*(this.contentGrids.length - index)):0,
-            })
+                x: (index) => index > 0 ? window.innerWidth - (convertPixels(2) * (this.contentGrids.length - index)) : 0,
+            });
             ScrollTrigger.refresh();
-            //this.initScroll()
         });
     }
 
+    initClickScroll() {
+        this.contentBlocks.forEach((block, index) => {
+            block.addEventListener('click', () => {
+                this.scrollToBlock(index);
+            });
+        });
+    }
+
+    scrollToBlock(index) {
+        let newBlocks = this.contentBlocks.toSpliced(index)
+        const getWidth = () => {
+            return newBlocks.reduce((acc, block) => acc + block.querySelector('.content-grid').scrollWidth, 0);
+        }
+        console.log(getWidth())
+        let a = convertPixels(5) + convertPixels((index + 1) * 2)
+        let b = index > 1 ? (window.innerWidth - (window.innerWidth*(0.10 * (this.contentBlocks.length - newBlocks.length)))) : window.innerWidth*0.15 + convertPixels(5);
+
+        if(index>0){
+            gsap.to(window, {
+                scrollTo: { y: getWidth() + b},
+                duration: 1,
+                ease: "power2.inOut"
+            });
+        }
+
+
+    }
 
     initScroll() {
         const getTotalWidth = () => {
             return this.contentBlocks.reduce((acc, block) => acc + block.scrollWidth, 0);
         }
 
-
-
         const timeline = gsap.timeline({
             scrollTrigger: {
                 trigger: this.contentWrapper,
                 start: "top top",
-                end: ()=> `+=${getTotalWidth()}`,
+                end: () => `+=${getTotalWidth()}`,
                 scrub: true,
                 pin: true,
                 invalidateOnRefresh: true,
@@ -172,43 +197,35 @@ class Scroller {
         this.contentBlocks.forEach((block, index) => {
             const grid = this.contentGrids[index];
 
-
             if (grid) {
                 const getGridWidth = () => {
-                    return index === this.contentGrids.length -1 ? grid.scrollWidth - window.innerWidth + (window.innerWidth * (0.15))  : grid.scrollWidth ;
+                    return index === this.contentGrids.length - 1 ? grid.scrollWidth - window.innerWidth + (window.innerWidth * 0.15) : grid.scrollWidth;
                 }
-                const overlapPoint = getGridWidth() - window.innerWidth;
 
                 // Move the current grid
-                timeline.to(grid, {
-                    x: -getGridWidth(),
-                    duration: (getGridWidth()+convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth() ,
-                    ease: "none",
-                }, index > 0 ? `-=${((window.innerWidth) / getTotalWidth()) * 0.05}` : 0);
-                //console.log(getGridWidth()/getTotalWidth())
-               // console.log(window.innerWidth/getTotalWidth())
+                mmMain.add("(min-width: 768px)", () => {
+                    timeline.to(grid, {
+                        x: -getGridWidth(),
+                        duration: (getGridWidth() + convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth(),
+                        ease: "none",
+                    }, index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0);
+                });
 
                 // Start moving the next block when the current grid is window.innerWidth away from its end
                 if (index < this.contentBlocks.length - 1) {
-                    mmMain.add("(min-width: 992px)", () => {
+                    mmMain.add("(min-width: 768px)", () => {
                         timeline.to(this.contentBlocks[index + 1], {
                             x: convertPixels(5) + convertPixels((index + 1) * 2),
-                            duration: (window.innerWidth - convertPixels(9.5) )/ getTotalWidth(),
+                            duration: (window.innerWidth - convertPixels(9.5)) / getTotalWidth(),
                             ease: "none",
-                        }, `-=${(window.innerWidth-convertPixels((this.contentBlocks.length - index + 1) * 2)) / getTotalWidth()}`);
-                    });
-                    mmMain.add("(max-width: 991px)", () => {
-                        timeline.to(this.contentBlocks[index + 1], {
-                            x: convertPixels(8),
-                            duration: window.innerWidth / getTotalWidth(),
-                            ease: "none",
-                        }, `-=${window.innerWidth / getTotalWidth()}`);
+                        }, `-=${(window.innerWidth - convertPixels((this.contentBlocks.length - index + 1) * 2)) / getTotalWidth()}`);
                     });
                 }
             }
         });
     }
 }
+
 
 class MomentsList {
     constructor(list) {

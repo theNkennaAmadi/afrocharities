@@ -47,17 +47,18 @@ const getEvents = async () => {
         const body = await response.json();
         const events = body.events;
 
-        const eventsHtml = await Promise.all(events.map(async (event) => {
-            const name = event.name.text;
-            const imgSrc = event.logo.original.url;
-            const eventUrl = event.url;
-            const venueID = event.venue_id;
-            const startDate = dayjs(event.start.utc).format('ddd D MMM YY');
-            const summary = event.summary;
+        if(events.length >0){
+            const eventsHtml = await Promise.all(events.map(async (event) => {
+                const name = event.name.text;
+                const imgSrc = event.logo.original.url;
+                const eventUrl = event.url;
+                const venueID = event.venue_id;
+                const startDate = dayjs(event.start.utc).format('ddd D MMM YY');
+                const summary = event.summary;
 
-            const venueName = await fetchVenue(venueID, privateToken);
+                const venueName = await fetchVenue(venueID, privateToken);
 
-            return `
+                return `
                 <div class="upcoming-event-item">
                     <div class="upcoming-event-img"><img
                             class="no-width"
@@ -105,12 +106,15 @@ const getEvents = async () => {
                     </a></div>
                   </div>  
             `;
-        }));
+            }));
 
-        wrapper.innerHTML = eventsHtml.join('');
-        setTimeout(()=>{
+            wrapper.innerHTML = eventsHtml.join('');
+            setTimeout(()=>{
+                new Event()
+            }, 500)
+        }else{
             new Event()
-        }, 500)
+        }
 
     } catch (e) {
         console.error('error', e);
