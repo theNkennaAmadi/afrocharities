@@ -3,62 +3,32 @@ import {gsap} from "gsap";
 import dayjs from 'dayjs'
 import {ScrollTrigger} from "gsap/ScrollTrigger";
 import Swiper from 'swiper/bundle';
-
  */
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 let mmMain = gsap.matchMedia();
 let mm = gsap.matchMedia();
 
-const organizationID ='2219528769483'
-const privateToken = 'XSWERLDWNUZA5KTQFIMB'
-
-
-const options = {
-    token: privateToken,
-    order_by: 'start_asc',
-    time_filter: 'current_future'
-};
-
-const buildUrl = (baseUrl, params) => {
-    const query = new URLSearchParams(params).toString();
-    return `${baseUrl}?${query}`;
-};
-
-const url = buildUrl(`https://www.eventbriteapi.com/v3/organizations/${organizationID}/events/`, options);
-
-
+let url = 'https://afro-charities-events.vercel.app/api/events';
 const wrapper = document.querySelector('.upcoming-events-wrapper');
-
-const fetchVenue = async (venueID, privateToken) => {
-    const response = await fetch(`https://www.eventbriteapi.com/v3/venues/${venueID}/`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${privateToken}`,
-            'Content-Type': 'application/json'
-        }
-    });
-    const body = await response.json();
-    return body.name;
-};
 
 const getEvents = async () => {
     try {
         const response = await fetch(url);
-        const body = await response.json();
-        const events = body.events;
+        const data = await response.json();
+        const events = data.data.events;
 
-        const eventsHtml = await Promise.all(events.map(async (event) => {
-            const name = event.name.text;
-            const imgSrc = event.logo.original.url;
-            const eventUrl = event.url;
-            const venueID = event.venue_id;
-            const startDate = dayjs(event.start.utc).format('ddd D MMM YY');
-            const summary = event.summary;
+        if(!events || events.length > 0){
+            const eventsHtml = await Promise.all(events.map(async (event) => {
+                const name = event.name.text;
+                const imgSrc = event.logo.original.url;
+                const eventUrl = event.url;
+                const startDate = dayjs(event.start.utc).format('ddd D MMM YY');
+                const summary = event.summary;
 
-            const venueName = await fetchVenue(venueID, privateToken);
+                const venueName = event.venue_name;
 
-            return `
+                return `
                 <div class="upcoming-event-item">
                     <div class="upcoming-event-img"><img
                             class="no-width"
@@ -106,12 +76,16 @@ const getEvents = async () => {
                     </a></div>
                   </div>  
             `;
-        }));
+            }));
 
-        wrapper.innerHTML = eventsHtml.join('');
-        setTimeout(()=>{
+            wrapper.innerHTML = eventsHtml.join('');
+            setTimeout(()=>{
+                new Scroller();
+            }, 500)
+
+        }else{
             new Scroller();
-        }, 500)
+        }
 
     } catch (e) {
         console.error('error', e);
@@ -143,16 +117,18 @@ class Scroller {
 
     initResize(){
         window.addEventListener('resize', () => {
-            gsap.set('.content-block', {
-                x: (index) => index > 0 ? window.innerWidth - (convertPixels(2) * (this.contentGrids.length - index)) : 0,
-            });
+            mmMain.add("(min-width: 768px)", () => {
+                gsap.set('.content-block', {
+                    x: (index) => index > 0 ? window.innerWidth - (convertPixels(2) * (this.contentGrids.length - index)) : 0,
+                });
+            })
             ScrollTrigger.refresh();
         });
     }
 
     initClickScroll() {
         this.contentBlocks.forEach((block, index) => {
-            block.addEventListener('click', () => {
+            block.querySelector('.content-block-identifier').addEventListener('click', () => {
                 this.scrollToBlock(index);
             });
         });
@@ -163,8 +139,6 @@ class Scroller {
         const getWidth = () => {
             return newBlocks.reduce((acc, block) => acc + block.querySelector('.content-grid').scrollWidth, 0);
         }
-        console.log(getWidth())
-        let a = convertPixels(5) + convertPixels((index + 1) * 2)
         let b = index > 1 ? (window.innerWidth - (window.innerWidth*(0.10 * (this.contentBlocks.length - newBlocks.length)))) : window.innerWidth*0.15 + convertPixels(5);
 
         if(index>0){
@@ -183,16 +157,20 @@ class Scroller {
             return this.contentBlocks.reduce((acc, block) => acc + block.scrollWidth, 0);
         }
 
-        const timeline = gsap.timeline({
-            scrollTrigger: {
-                trigger: this.contentWrapper,
-                start: "top top",
-                end: () => `+=${getTotalWidth()}`,
-                scrub: true,
-                pin: true,
-                invalidateOnRefresh: true,
-            },
+        let timeline
+        mmMain.add("(min-width: 768px)", () => {
+            timeline = gsap.timeline({
+                scrollTrigger: {
+                    trigger: this.contentWrapper,
+                    start: "top top",
+                    end: () => `+=${getTotalWidth()}`,
+                    scrub: true,
+                    pin: true,
+                    invalidateOnRefresh: true,
+                },
+            });
         });
+
 
         this.contentBlocks.forEach((block, index) => {
             const grid = this.contentGrids[index];
@@ -204,10 +182,12 @@ class Scroller {
 
                 // Move the current grid
                 mmMain.add("(min-width: 768px)", () => {
+                    let startTime;
                     timeline.to(grid, {
                         x: -getGridWidth(),
                         duration: (getGridWidth() + convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth(),
                         ease: "none",
+
                     }, index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0);
                 });
 
@@ -373,7 +353,7 @@ function setupVerticalLoop(marquee, reverse = false) {
     const loop = verticalLoop(items, {
         paused: false,
         repeat: -1,
-        speed: 1.5,
+        speed: 0.7,
         reversed: reverse
     });
 
@@ -386,7 +366,7 @@ function setupHorizontalLoop(marquee, reverse = false) {
     const loop = horizontalLoop(items, {
         paused: false,
         repeat: -1,
-        speed: 1.5,
+        speed: 0.5,
         reversed: reverse
     });
 

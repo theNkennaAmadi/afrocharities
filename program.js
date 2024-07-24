@@ -9,54 +9,26 @@ import Swiper from 'swiper/bundle';
 gsap.registerPlugin(ScrollTrigger);
 let mm = gsap.matchMedia();
 
-const organizationID ='2219528769483'
-const privateToken = 'XSWERLDWNUZA5KTQFIMB'
-
-
-const options = {
-    token: privateToken,
-    order_by: 'start_asc',
-    time_filter: 'current_future'
-};
-
-const buildUrl = (baseUrl, params) => {
-    const query = new URLSearchParams(params).toString();
-    return `${baseUrl}?${query}`;
-};
-
-const url = buildUrl(`https://www.eventbriteapi.com/v3/organizations/${organizationID}/events/`, options);
-
+let url = 'https://afro-charities-events.vercel.app/api/events';
 
 const wrapper = document.querySelector('.upcoming-events-wrapper');
 
-const fetchVenue = async (venueID, privateToken) => {
-    const response = await fetch(`https://www.eventbriteapi.com/v3/venues/${venueID}/`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${privateToken}`,
-            'Content-Type': 'application/json'
-        }
-    });
-    const body = await response.json();
-    return body.name;
-};
 
 const getEvents = async () => {
     try {
         const response = await fetch(url);
-        const body = await response.json();
-        const events = body.events;
+        const data = await response.json();
+        const events = data.data.events;
 
-        if(events.length >0){
+        if(!events || events.length > 0){
             const eventsHtml = await Promise.all(events.map(async (event) => {
                 const name = event.name.text;
                 const imgSrc = event.logo.original.url;
                 const eventUrl = event.url;
-                const venueID = event.venue_id;
                 const startDate = dayjs(event.start.utc).format('ddd D MMM YY');
                 const summary = event.summary;
 
-                const venueName = await fetchVenue(venueID, privateToken);
+                const venueName = event.venue_name;
 
                 return `
                 <div class="upcoming-event-item">
@@ -115,7 +87,6 @@ const getEvents = async () => {
         }else{
             new Event()
         }
-
     } catch (e) {
         console.error('error', e);
     }

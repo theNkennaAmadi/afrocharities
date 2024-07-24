@@ -58,7 +58,6 @@ window.setTimeout(() => {
 }, 1000);
 
 
-
 class MomentsList {
     constructor(list) {
         this.list = list;
