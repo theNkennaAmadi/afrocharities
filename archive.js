@@ -13,10 +13,10 @@ gsap.registerPlugin(ScrollTrigger);
 
 ScrollTrigger.normalizeScroll(true);
 
-const slidesToShow = window.innerHeight / remToPixels(4);
+const slidesToShow = window.innerHeight / remToPixels(8);
 const slides = document.querySelectorAll('.swiper-slide');
 if(slides.length < slidesToShow){
-    gsap.set('.v-content-btn', {opacity: 0})
+    gsap.set('.v-content-btn-wrapper', {display: 'none'})
 }
 
 

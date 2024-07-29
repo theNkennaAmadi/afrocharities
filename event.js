@@ -138,7 +138,7 @@ class Event {
     }
 }
 
-const slidesToShow = window.innerHeight / remToPixels(4);
+const slidesToShow = window.innerHeight / remToPixels(8);
 const slides = document.querySelectorAll('.swiper-slide');
 if(slides.length < slidesToShow){
     gsap.set('.v-content-btn-wrapper', {display: 'none'})

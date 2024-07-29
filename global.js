@@ -63,6 +63,7 @@ window.addEventListener('load', () => {
                 .to(this.navMenuBtn.querySelector('.menu-text:nth-of-type(1)'), {opacity:0}, "<")
                 .to(this.navMenuBtn.querySelector('.menu-text:nth-of-type(2)'), {opacity:1}, "<")
                 .from(this.hiddenContent, {yPercent: 110, stagger: {amount: 0.6}}, "<0.5")
+                .from('.embed.arrow', {yPercent: 150, duration:0.6},"<0.2")
 
             this.navMenuBtn.addEventListener('click', () => {
                 if(document.querySelector('.menu-lottie')){

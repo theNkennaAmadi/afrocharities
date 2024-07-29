@@ -38,3 +38,14 @@ faqs.map((faq) => {
     });
 });
 
+document.getElementById('closeBtn').addEventListener('click', function() {
+    if (document.referrer) {
+        // Check if there is a previous page
+        window.history.back();
+    } else {
+        // No previous page, redirect to the homepage
+        window.location.href = '/'; // Replace '/' with your homepage URL if it's different
+    }
+});
+
+

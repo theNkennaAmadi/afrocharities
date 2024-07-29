@@ -5,11 +5,13 @@ class Archive {
         this.links = Array.from(this.nextLinksContainer).map(link => link.getAttribute('href'));
         this.nextLink = document.querySelector('.nav-prog-btn.next')
         this.prevLink = document.querySelector('.nav-prog-btn.prev')
+        this.navProBtn =[...document.querySelectorAll('.nav-prog-btn')]
         this.init();
     }
 
     init(){
         this.setUpNextPrev();
+        this.navigationAnimation();
     }
 
     findAdjacentLinks(url, links) {
@@ -29,6 +31,23 @@ class Archive {
         const result = this.findAdjacentLinks(window.location.pathname, this.links);
         this.nextLink.href = result.next
         this.prevLink.href = result.previous
+    }
+
+    navigationAnimation(){
+        this.navProBtn.forEach(btn => {
+            const tlNavigation = gsap.timeline({paused: true});
+            tlNavigation.to(btn.querySelector('.icon-2'), {x: '0rem', y: '0rem', duration: 0.5})
+                .to(btn.querySelector('.icon-1'), {x: '1rem', y: '1rem', duration: 0.5}, "<")
+                .to(this.navProBtn.filter(link => link !== btn), {opacity: 0.5, duration: 0.3}, "<")
+
+
+            btn.addEventListener('mouseenter', () => {
+                tlNavigation.play();
+            });
+            btn.addEventListener('mouseleave', () => {
+                tlNavigation.reverse();
+            });
+        });
     }
 }
 

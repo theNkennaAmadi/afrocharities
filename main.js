@@ -101,6 +101,7 @@ const convertPixels = (rem) => {
     );
 };
 
+
 class Scroller {
     constructor() {
         this.contentWrapper = document.querySelector(".content-wrapper");
@@ -179,15 +180,20 @@ class Scroller {
                 const getGridWidth = () => {
                     return index === this.contentGrids.length - 1 ? grid.scrollWidth - window.innerWidth + (window.innerWidth * 0.15) : grid.scrollWidth;
                 }
+                let gridProgress = {value: 0};  // Custom progress tracker for this grid
 
                 // Move the current grid
                 mmMain.add("(min-width: 768px)", () => {
-                    let startTime;
                     timeline.to(grid, {
                         x: -getGridWidth(),
                         duration: (getGridWidth() + convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth(),
                         ease: "none",
-
+                        onUpdate: () => {
+                            gridProgress.value = gsap.getProperty(grid, "x") / -getGridWidth();
+                            const totalProgress =  index < this.contentGrids.length -1 ? Math.min(1, Math.max(0, gridProgress.value)) : Math.min(1, Math.max(0, gridProgress.value))*0.85;
+                            gsap.set(grid.parentElement.querySelector('.scroll-indicator'), {width: `${totalProgress * 100}%`});
+                            console.log(`Grid ${index} progress:`, totalProgress);
+                        }
                     }, index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0);
                 });
 
@@ -353,7 +359,7 @@ function setupVerticalLoop(marquee, reverse = false) {
     const loop = verticalLoop(items, {
         paused: false,
         repeat: -1,
-        speed: 0.7,
+        speed: 0.5,
         reversed: reverse
     });
 
@@ -366,7 +372,7 @@ function setupHorizontalLoop(marquee, reverse = false) {
     const loop = horizontalLoop(items, {
         paused: false,
         repeat: -1,
-        speed: 0.5,
+        speed: 0.4,
         reversed: reverse
     });
 
@@ -390,6 +396,10 @@ function handleMarqueeItemClick(e, loop) {
     loop1.pause();
     loop2.pause()
 
+    // Disable scrolling
+    document.body.style.overflow = 'hidden';
+
+
     // Show modal wrapper
     gsap.set(modalWrapper, { display: 'flex' });
 
@@ -409,6 +419,9 @@ function handleModalClose() {
 
     // Hide modal wrapper
     gsap.set(modalWrapper, { display: 'none' });
+
+    // Re-enable scrolling
+    document.body.style.overflow = '';
 
     // Resume both marquees
     //mm.revert();  // This will reapply the current context, effectively resuming the loops
