@@ -68,7 +68,13 @@ window.addEventListener('load', () => {
             this.navMenuBtn.addEventListener('click', () => {
                 if(document.querySelector('.menu-lottie')){
                     this.navOpen ? this.tlShowNav.reverse() : this.tlShowNav.play();
-                    this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
+                    if (menuAnimation.isLoaded) {
+                        this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
+                    }else{
+                        menuAnimation.addEventListener('DOMLoaded', ()=>{
+                            this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
+                        })
+                    }
                     this.navOpen = !this.navOpen;
                 }
             })

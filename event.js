@@ -66,7 +66,7 @@ const getEvents = async () => {
                       </div>
                       <div class="upcoming-event-details"><h3>${name}</h3></div>
                       <p>${summary}</p><a href="${eventUrl}" class="pill-btn w-inline-block" target="_blank" aria-label="${summary}" aria-describedby="Learn More aboout ${name}">
-                      <div>Learn more</div>
+                      <div>RSVP Now</div>
                       <div class="pill-btn-icon">
                         <div class="embed w-embed">
                           <svg width="100%" height="100%" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
