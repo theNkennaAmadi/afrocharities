@@ -33,6 +33,8 @@ document.addEventListener('htmx:afterRequest', function(evt) {
                            window.addEventListener('resize', () => {
                                ScrollTrigger.refresh();
                            });
+
+                            this.checkAnchorOnLoad();
                        }
 
                        updateScroll() {
@@ -63,6 +65,33 @@ document.addEventListener('htmx:afterRequest', function(evt) {
                                });
                            })
                        }
+
+                       // Function to scroll to a specific section
+                       scrollToSection(sectionId) {
+                           const section = document.getElementById(sectionId).previousElementSibling;
+                           if (section) {
+                               const scrollContainer = document.querySelector('.component-wrapper');
+                               const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
+                               gsap.to(window, {
+                                   scrollTo: sectionOffset,
+                                   duration: 1
+                               })
+
+                               // Update the scroll indicator
+                               const scrollWidth = scrollContainer.scrollWidth;
+                               const progress = (sectionOffset / (scrollWidth - window.innerWidth)) * 100;
+                               gsap.to('.scroll-indicator', {width: `${progress}%`, duration: 1});
+                           }
+                       }
+
+                       // Function to check for anchor links on page load
+                       checkAnchorOnLoad() {
+                           if (window.location.hash) {
+                               const sectionId = window.location.hash.substring(1);
+                               this.scrollToSection(sectionId);
+                           }
+                       }
+
                    }
 
 

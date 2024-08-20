@@ -21,6 +21,7 @@ window.addEventListener('load', () => {
             this.navMenuBtn = this.header.querySelector('.nav-menu-btn');
             this.navList = this.header.querySelector('.nav-list');
             this.nav = this.header.querySelector('.nav');
+            this.navLinks = [...this.navList.querySelectorAll('a')];
             this.navListItems = [...this.header.querySelectorAll('.nav-list-item')];
             this.navSubLinks = [...this.header.querySelectorAll('.nav-list-sub-link')];
             this.navHiddenContentWrapper = [...this.header.querySelectorAll('.h-c')];
@@ -79,15 +80,56 @@ window.addEventListener('load', () => {
                 }
             })
 
+            this.navLinks.forEach((link) => {
+                link.addEventListener('click', () => {
+                    this.navOpen ? this.tlShowNav.reverse() : this.tlShowNav.play();
+                    this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
+                    this.navOpen = !this.navOpen;
+                });
+            });
+
         }
     }
 
     new Nav(document.querySelector('.header'));
 
+    function initImageReveal() {
+        const images = document.querySelectorAll('img');
+        console.log(images);
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    gsap.to(img.parentElement, {
+                        opacity: 1,
+                        scale: 1,
+                        duration: 2,
+                        ease: 'power2.out'
+                    });
+                    observer.unobserve(img);
+                }
+            });
+        }, observerOptions);
+
+        images.forEach(img => {
+            gsap.set(img.parentElement, { opacity: 0, scale: 0.94 });
+            observer.observe(img);
+        });
+    }
+
+    initImageReveal();
 
 
 
-//Disable right click
+
+    //Disable right click
     document.addEventListener('contextmenu', event => event.preventDefault());
 
     gsap.to('.component-wrapper', {opacity: 1, duration: 1.5, delay: 0.3})
