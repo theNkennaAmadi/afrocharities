@@ -192,7 +192,7 @@ class Scroller {
                             gridProgress.value = gsap.getProperty(grid, "x") / -getGridWidth();
                             const totalProgress =  index < this.contentGrids.length -1 ? Math.min(1, Math.max(0, gridProgress.value)) : Math.min(1, Math.max(0, gridProgress.value))*0.85;
                             gsap.set(grid.parentElement.querySelector('.scroll-indicator'), {width: `${totalProgress * 100}%`});
-                            console.log(`Grid ${index} progress:`, totalProgress);
+                           // console.log(`Grid ${index} progress:`, totalProgress);
                         }
                     }, index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0);
                 });
@@ -222,10 +222,16 @@ class MomentsList {
         this.nextBtn = list.querySelector('.h-content-btn.next');
         this.currentIndex = 0;
 
-
         this.setInitialPositions();
         this.nextBtn.addEventListener('click', this.nextCard.bind(this));
         this.prevBtn.addEventListener('click', this.prevCard.bind(this));
+
+        // Add touch event listeners for swiping
+        this.touchStartX = 0;
+        this.touchEndX = 0;
+        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
     }
 
     setInitialPositions() {
@@ -314,6 +320,28 @@ class MomentsList {
     prevCard() {
         this.currentIndex = (this.currentIndex - 1 + this.items.length) % this.items.length;
         this.updateCards('prev');
+    }
+
+    // New touch event handlers
+    onTouchStart(e) {
+        this.touchStartX = e.touches[0].clientX;
+    }
+
+    onTouchMove(e) {
+        this.touchEndX = e.touches[0].clientX;
+    }
+
+    onTouchEnd() {
+        if (this.touchStartX - this.touchEndX > 50) {
+            // Swipe left, go to next card
+            this.nextCard();
+        } else if (this.touchEndX - this.touchStartX > 50) {
+            // Swipe right, go to previous card
+            this.prevCard();
+        }
+        // Reset values
+        this.touchStartX = 0;
+        this.touchEndX = 0;
     }
 }
 

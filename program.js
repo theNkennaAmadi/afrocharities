@@ -142,13 +142,22 @@ class Event {
     // Function to scroll to a specific section
     scrollToSection(sectionId) {
         const section = document.getElementById(sectionId).previousElementSibling;
+        const mainSection = document.getElementById(sectionId);
         if (section) {
             const scrollContainer = document.querySelector('.component-wrapper');
             const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
-            gsap.to(window, {
-                scrollTo: sectionOffset,
-                duration: 1
-            })
+            if(window.innerWidth < 768){
+                gsap.to(window, {
+                    scrollTo: mainSection.getBoundingClientRect().top - 64,
+                    duration: 1
+                })
+            }else{
+                gsap.to(window, {
+                    scrollTo: sectionOffset,
+                    duration: 1,
+                    ease: "power2.out"
+                })
+            }
 
             // Update the scroll indicator
             const scrollWidth = scrollContainer.scrollWidth;

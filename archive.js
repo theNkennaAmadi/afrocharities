@@ -11,8 +11,6 @@ let mx = gsap.matchMedia();
 
 gsap.registerPlugin(ScrollTrigger);
 
-ScrollTrigger.normalizeScroll(true);
-
 const slidesToShow = window.innerHeight / remToPixels(8);
 const slides = document.querySelectorAll('.swiper-slide');
 if(slides.length < slidesToShow){
@@ -25,6 +23,8 @@ const swiper = new Swiper('.swiper', {
     direction: 'vertical',
     loop: true,
     autoHeight: true,
+    slidesPerGroup: 1,
+    slidesPerGroupAuto: true,
     slidesPerView: "auto",
     // Navigation arrows
     navigation: {
@@ -33,6 +33,7 @@ const swiper = new Swiper('.swiper', {
     },
 
 });
+
 
 function remToPixels(rem) {
     // Get the root font size
@@ -112,13 +113,22 @@ class Scroller {
     // Function to scroll to a specific section
     scrollToSection(sectionId) {
         const section = document.getElementById(sectionId).previousElementSibling;
+        const mainSection = document.getElementById(sectionId);
         if (section) {
             const scrollContainer = document.querySelector('.component-wrapper');
             const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
-            gsap.to(window, {
-                scrollTo: sectionOffset,
-                duration: 1
-            })
+            if(window.innerWidth < 768){
+                gsap.to(window, {
+                    scrollTo: mainSection.getBoundingClientRect().top - 64,
+                    duration: 1
+                })
+            }else{
+                gsap.to(window, {
+                    scrollTo: sectionOffset,
+                    duration: 1,
+                    ease: "power2.out"
+                })
+            }
 
             // Update the scroll indicator
             const scrollWidth = scrollContainer.scrollWidth;
@@ -153,13 +163,16 @@ class MomentsList {
         this.nextBtn = list.querySelector('.h-content-btn.next');
         this.currentIndex = 0;
 
-        gsap.set(this.itemDetails, {opacity: 0, visibility: 'hidden'})
-
-        //console.log(this.nextBtn)
-
         this.setInitialPositions();
         this.nextBtn.addEventListener('click', this.nextCard.bind(this));
         this.prevBtn.addEventListener('click', this.prevCard.bind(this));
+
+        // Add touch event listeners for swiping
+        this.touchStartX = 0;
+        this.touchEndX = 0;
+        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
     }
 
     setInitialPositions() {
@@ -174,7 +187,8 @@ class MomentsList {
             });
             gsap.to(this.itemDetails[this.currentIndex], {
                 autoAlpha: 1,
-                duration: 0.2
+                duration: 0.2,
+                zIndex: 5
             });
         });
     }
@@ -198,36 +212,42 @@ class MomentsList {
                     visibility: 'hidden',
                     z:'-20rem',
                     yPercent: 50,
-                    duration: 0.5
+                    duration: 0.5,
+                    zIndex: 1
                 });
                 tl.fromTo(this.itemDetails[this.currentIndex], {
                     autoAlpha: 0.5,
                     z:'10rem',
                     yPercent: 100,
-                    duration: 0.5
+                    duration: 0.5,
+                    zIndex: 1
                 }, {
                     autoAlpha: 1,
                     z:'0rem',
                     yPercent: 0,
-                    duration: 0.5
+                    duration: 0.5,
+                    zIndex: 5
                 }, "<");
             }else{
                 tl.to(this.itemDetails[index], {
                     visibility: 'hidden',
                     z:'10rem',
                     yPercent: 100,
-                    duration: 0.3
+                    duration: 0.3,
+                    zIndex: 1,
                 });
                 tl.fromTo(this.itemDetails[this.currentIndex], {
                     autoAlpha: 0.5,
                     z:'-20rem',
                     yPercent: 100,
-                    duration: 0.5
+                    duration: 0.5,
+                    zIndex: 1
                 }, {
                     autoAlpha: 1,
                     z:'0rem',
                     yPercent: 0,
-                    duration: 0.5
+                    duration: 0.5,
+                    zIndex: 5
                 }, "<");
             }
         });
@@ -241,6 +261,28 @@ class MomentsList {
     prevCard() {
         this.currentIndex = (this.currentIndex - 1 + this.items.length) % this.items.length;
         this.updateCards('prev');
+    }
+
+    // New touch event handlers
+    onTouchStart(e) {
+        this.touchStartX = e.touches[0].clientX;
+    }
+
+    onTouchMove(e) {
+        this.touchEndX = e.touches[0].clientX;
+    }
+
+    onTouchEnd() {
+        if (this.touchStartX - this.touchEndX > 50) {
+            // Swipe left, go to next card
+            this.nextCard();
+        } else if (this.touchEndX - this.touchStartX > 50) {
+            // Swipe right, go to previous card
+            this.prevCard();
+        }
+        // Reset values
+        this.touchStartX = 0;
+        this.touchEndX = 0;
     }
 }
 

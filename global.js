@@ -95,7 +95,6 @@ window.addEventListener('load', () => {
 
     function initImageReveal() {
         const images = document.querySelectorAll('img');
-        console.log(images);
 
         const observerOptions = {
             root: null,

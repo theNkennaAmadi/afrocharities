@@ -58,6 +58,7 @@ class About {
                     invalidateOnRefresh: true,
                     onUpdate: (self) => {
                         const progress = self.progress * 100;
+                       console.log(progress)
                         gsap.to('.scroll-indicator', {width: `${progress}%`} )
                     }
                 }
@@ -68,17 +69,33 @@ class About {
     // Function to scroll to a specific section
     scrollToSection(sectionId) {
         const section = document.getElementById(sectionId).previousElementSibling;
+        const mainSection = document.getElementById(sectionId);
+        let getPosition = getScrollLookup("[h-section]", {
+            containerAnimation: this.scrollTriggerInstance,
+            start: "left left",
+        });
         if (section) {
             const scrollContainer = document.querySelector('.component-wrapper');
             const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
-            gsap.to(window, {
-                scrollTo: sectionOffset,
-                duration: 1
-            })
 
-            // Update the scroll indicator
             const scrollWidth = scrollContainer.scrollWidth;
             const progress = (sectionOffset / (scrollWidth - window.innerWidth)) * 100;
+            const amount = (scrollWidth-window.innerWidth - (mainSection.offsetWidth)+ (window.innerWidth*0.25))*(progress/100)
+            if(window.innerWidth < 768){
+                gsap.to(window, {
+                    scrollTo: mainSection.getBoundingClientRect().top - 64,
+                    duration: 1
+                })
+            }else{
+                gsap.to(window, {
+                    scrollTo: amount,
+                    duration: 1,
+                    ease: "power2.out"
+                })
+            }
+
+            // Update the scroll indicator
+            //console.log(progress, this.getScrollAmount(), this.getScrollAmount()*(progress/100))
             gsap.to('.scroll-indicator', {width: `${progress}%`, duration: 1});
         }
     }
@@ -106,6 +123,13 @@ class MomentsList {
         this.setInitialPositions();
         this.nextBtn.addEventListener('click', this.nextCard.bind(this));
         this.prevBtn.addEventListener('click', this.prevCard.bind(this));
+
+        // Add touch event listeners for swiping
+        this.touchStartX = 0;
+        this.touchEndX = 0;
+        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
     }
 
     setInitialPositions() {
@@ -195,7 +219,67 @@ class MomentsList {
         this.currentIndex = (this.currentIndex - 1 + this.items.length) % this.items.length;
         this.updateCards('prev');
     }
+
+    // New touch event handlers
+    onTouchStart(e) {
+        this.touchStartX = e.touches[0].clientX;
+    }
+
+    onTouchMove(e) {
+        this.touchEndX = e.touches[0].clientX;
+    }
+
+    onTouchEnd() {
+        if (this.touchStartX - this.touchEndX > 50) {
+            // Swipe left, go to next card
+            this.nextCard();
+        } else if (this.touchEndX - this.touchStartX > 50) {
+            // Swipe right, go to previous card
+            this.prevCard();
+        }
+        // Reset values
+        this.touchStartX = 0;
+        this.touchEndX = 0;
+    }
 }
 
 const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
 momentsList.forEach((list) => new MomentsList(list));
+
+
+/*
+Returns a FUNCTION that you can feed an element to get its scroll position.
+- targets: selector text, element, or Array of elements
+- config: an object with any of the following optional properties:
+- start: defaults to "top top" but can be anything like "center center", "100px 80%", etc. Same format as "start" and "end" ScrollTrigger values.
+- containerAnimation: the horizontal scrolling tween/timeline. Must have an ease of "none"/"linear".
+- pinnedContainer: if you're pinning a container of the element(s), you must define it so that ScrollTrigger can make the proper accommodations.
+*/
+function getScrollLookup(
+    targets,
+    { start, pinnedContainer, containerAnimation }
+) {
+    let triggers = gsap.utils.toArray(targets).map((el) =>
+            ScrollTrigger.create({
+                trigger: el,
+                start: start || "top top",
+                pinnedContainer: pinnedContainer,
+                refreshPriority: -10,
+                containerAnimation: containerAnimation,
+            })
+        ),
+        st = containerAnimation && containerAnimation.scrollTrigger;
+    return (target) => {
+        let t = gsap.utils.toArray(target)[0],
+            i = triggers.length;
+        while (i-- && triggers[i].trigger !== t) {}
+        if (i < 0) {
+            return console.warn("target not found", target);
+        }
+        return containerAnimation
+            ? st.start +
+            (triggers[i].start / containerAnimation.duration()) *
+            (st.end - st.start)
+            : triggers[i].start;
+    };
+}
