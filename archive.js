@@ -151,6 +151,7 @@ class ArchiveManager {
 
 class Scroller {
     constructor() {
+        this.mm = gsap.matchMedia();
         this.scrollWrapper = document.querySelector('.components-main-wrapper');
         this.scrollContainer = document.querySelector('.component-wrapper');
         this.init();
