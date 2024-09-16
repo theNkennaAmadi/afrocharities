@@ -18,7 +18,6 @@ class About {
     init() {
         //this.calculateScrollValues();
         this.initHorScroll();
-        console.log('about');
 
         // Listen for resize events
         window.addEventListener('resize', () => {
@@ -58,7 +57,6 @@ class About {
                     invalidateOnRefresh: true,
                     onUpdate: (self) => {
                         const progress = self.progress * 100;
-                       console.log(progress)
                         gsap.to('.scroll-indicator', {width: `${progress}%`} )
                     }
                 }

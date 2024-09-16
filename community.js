@@ -4,6 +4,9 @@ import {gsap} from "gsap";
 import Swiper from "swiper";
 
  */
+// Initialize the CommunityManager
+let communityManager;
+
 gsap.registerPlugin(ScrollTrigger);
 class CommunityManager {
     constructor() {
@@ -116,7 +119,6 @@ class Scroller {
                     invalidateOnRefresh: true,
                     onUpdate: (self) => {
                         const progress = self.progress * 100;
-                        console.log(progress);
                         gsap.to('.scroll-indicator', { width: `${progress}%` });
                     }
                 }
@@ -149,7 +151,7 @@ class Scroller {
                     ease: "power2.out"
                 });
             }
-            console.log(progress, this.getScrollAmount(), this.getScrollAmount() * (progress / 100));
+           // console.log(progress, this.getScrollAmount(), this.getScrollAmount() * (progress / 100));
             gsap.to('.scroll-indicator', { width: `${progress}%`, duration: 1 });
         }
     }
@@ -290,8 +292,6 @@ class MomentsList {
     }
 }
 
-// Initialize the CommunityManager
-let communityManager;
 
 window.addEventListener('load', () => {
     communityManager = new CommunityManager();
