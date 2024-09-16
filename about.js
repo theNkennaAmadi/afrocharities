@@ -109,7 +109,6 @@ class About {
     }
 }
 
-new About();
 
 class MomentsList {
     constructor(list) {
@@ -243,8 +242,11 @@ class MomentsList {
     }
 }
 
-const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
-momentsList.forEach((list) => new MomentsList(list));
+window.addEventListener("load", () => {
+    new About();
+    const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
+    momentsList.forEach((list) => new MomentsList(list));
+})
 
 
 /*

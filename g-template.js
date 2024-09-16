@@ -88,6 +88,6 @@ class Archive {
 }
 
 
-
-// Example usage
-new Archive();
+window.addEventListener('load', ()=>{
+    new Archive();
+})

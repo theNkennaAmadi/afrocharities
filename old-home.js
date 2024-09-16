@@ -5,86 +5,105 @@ import {ScrollTrigger} from "gsap/ScrollTrigger";
 import Swiper from 'swiper/bundle';
  */
 
-const mmMain = gsap.matchMedia();
-const mm = gsap.matchMedia();
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+let mmMain = gsap.matchMedia();
+let mm = gsap.matchMedia();
 
-// EventManager.js
-class EventManager {
-    constructor(url, wrapper) {
-        this.url = url;
-        this.wrapper = wrapper;
-    }
+let url = 'https://afro-charities-events.vercel.app/api/events';
+const wrapper = document.querySelector('.upcoming-events-wrapper');
 
-    async fetchEvents() {
-        try {
-            const response = await fetch(this.url);
-            const data = await response.json();
-            return data.data.events;
-        } catch (e) {
-            console.error('Error fetching events:', e);
-            return [];
-        }
-    }
+const getEvents = async () => {
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const events = data.data.events;
 
-    async renderEvents() {
-        const events = await this.fetchEvents();
-        if (events && events.length > 0) {
-            const eventsHtml = events.map(this.createEventHtml).join('');
-            this.wrapper.innerHTML = eventsHtml;
-            setTimeout(() => new Scroller(), 1000);
-        } else {
+        if(!events || events.length > 0){
+            const eventsHtml = await Promise.all(events.map(async (event) => {
+                const name = event.name.text;
+                const imgSrc = event.logo.original.url;
+                const eventUrl = event.url;
+                const startDate = dayjs(event.start.utc).format('ddd D MMM YY');
+                const summary = event.summary;
+
+                const venueName = event.venue_name;
+
+                return `
+                <div class="upcoming-event-item">
+                    <div class="upcoming-event-img"><img
+                            src="${imgSrc}"
+                            loading="eager"
+                            alt="${name}"></div>
+                    <div class="upcoming-event-content">
+                      <div class="upcoming-events-loc">
+                        <div class="upcoming-event-date-wrapper">
+                          <div class="event-icon">
+                            <div class="embed w-embed">
+                              <svg width="100%" height="100%" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3.04688 6V20C3.04688 20.5304 3.25759 21.0391 3.63266 21.4142C4.00773 21.7893 4.51644 22 5.04688 22H19.0469C19.5773 22 20.086 21.7893 20.4611 21.4142C20.8362 21.0391 21.0469 20.5304 21.0469 20V6C21.0469 5.46957 20.8362 4.96086 20.4611 4.58579C20.086 4.21071 19.5773 4 19.0469 4H17.0469V2H15.0469V4H9.04688V2H7.04688V4H5.04688C4.51644 4 4.00773 4.21071 3.63266 4.58579C3.25759 4.96086 3.04688 5.46957 3.04688 6ZM19.0469 20H5.04688V8H19.0469V20Z"
+                                      fill="currentColor"></path>
+                              </svg>
+                            </div>
+                          </div>
+                          <div>${startDate}</div>
+                        </div>
+                        <div class="upcoming-event-date-wrapper">
+                          <div class="event-icon">
+                            <div class="embed w-embed">
+                              <svg width="100%" height="100%" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12.0469 14C14.2529 14 16.0469 12.206 16.0469 10C16.0469 7.794 14.2529 6 12.0469 6C9.84094 6 8.04694 7.794 8.04694 10C8.04694 12.206 9.84094 14 12.0469 14ZM12.0469 8C13.1499 8 14.0469 8.897 14.0469 10C14.0469 11.103 13.1499 12 12.0469 12C10.9439 12 10.0469 11.103 10.0469 10C10.0469 8.897 10.9439 8 12.0469 8Z"
+                                      fill="currentColor"></path>
+                                <path d="M11.467 21.814C11.6362 21.9349 11.839 21.9998 12.047 21.9998C12.2549 21.9998 12.4577 21.9349 12.627 21.814C12.931 21.599 20.076 16.44 20.047 10C20.047 5.589 16.458 2 12.047 2C7.63596 2 4.04696 5.589 4.04696 9.995C4.01796 16.44 11.163 21.599 11.467 21.814ZM12.047 4C15.356 4 18.047 6.691 18.047 10.005C18.068 14.443 13.659 18.428 12.047 19.735C10.436 18.427 6.02596 14.441 6.04696 10C6.04696 6.691 8.73796 4 12.047 4Z"
+                                      fill="currentColor"></path>
+                              </svg>
+                            </div>
+                          </div>
+                          <div>${venueName}</div>
+                        </div>
+                      </div>
+                      <div class="upcoming-event-details"><h3>${name}</h3></div>
+                      <p>${summary}</p><a href="${eventUrl}" class="pill-btn w-inline-block" target="_blank" >
+                      <div>RSVP Now</div>
+                      <div class="pill-btn-icon">
+                        <div class="embed w-embed">
+                          <svg width="100%" height="100%" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8.44968 9.81678L10.4494 9.81678L10.4494 0.331654H0.964245V2.33135H7.03546L0.257138 9.10968L1.67135 10.5239L8.44968 3.74556L8.44968 9.81678Z"
+                                  fill="currentColor"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    </a></div>
+                  </div>  
+            `;
+            }));
+
+            wrapper.innerHTML = eventsHtml.join('');
+            setTimeout(()=>{
+                new Scroller();
+            }, 500)
+
+        }else{
             new Scroller();
         }
+
+    } catch (e) {
+        console.error('error', e);
     }
+};
 
-    createEventHtml(event) {
-        const { name, logo, url, start, summary, venue_name } = event;
-        const startDate = dayjs(start.utc).format('ddd D MMM YY');
 
-        return `
-            <div class="upcoming-event-item">
-                <div class="upcoming-event-img">
-                    <img src="${logo.original.url}" loading="eager" alt="${name.text}">
-                </div>
-                <div class="upcoming-event-content">
-                    <div class="upcoming-events-loc">
-                        <div class="upcoming-event-date-wrapper">
-                            <div class="event-icon">
-                                <svg width="100%" height="100%" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M3.04688 6V20C3.04688 20.5304 3.25759 21.0391 3.63266 21.4142C4.00773 21.7893 4.51644 22 5.04688 22H19.0469C19.5773 22 20.086 21.7893 20.4611 21.4142C20.8362 21.0391 21.0469 20.5304 21.0469 20V6C21.0469 5.46957 20.8362 4.96086 20.4611 4.58579C20.086 4.21071 19.5773 4 19.0469 4H17.0469V2H15.0469V4H9.04688V2H7.04688V4H5.04688C4.51644 4 4.00773 4.21071 3.63266 4.58579C3.25759 4.96086 3.04688 5.46957 3.04688 6ZM19.0469 20H5.04688V8H19.0469V20Z" fill="currentColor"/>
-                                </svg>
-                            </div>
-                            <div>${startDate}</div>
-                        </div>
-                        <div class="upcoming-event-date-wrapper">
-                            <div class="event-icon">
-                                <svg width="100%" height="100%" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12.0469 14C14.2529 14 16.0469 12.206 16.0469 10C16.0469 7.794 14.2529 6 12.0469 6C9.84094 6 8.04694 7.794 8.04694 10C8.04694 12.206 9.84094 14 12.0469 14ZM12.0469 8C13.1499 8 14.0469 8.897 14.0469 10C14.0469 11.103 13.1499 12 12.0469 12C10.9439 12 10.0469 11.103 10.0469 10C10.0469 8.897 10.9439 8 12.0469 8Z" fill="currentColor"/>
-                                    <path d="M11.467 21.814C11.6362 21.9349 11.839 21.9998 12.047 21.9998C12.2549 21.9998 12.4577 21.9349 12.627 21.814C12.931 21.599 20.076 16.44 20.047 10C20.047 5.589 16.458 2 12.047 2C7.63596 2 4.04696 5.589 4.04696 9.995C4.01796 16.44 11.163 21.599 11.467 21.814ZM12.047 4C15.356 4 18.047 6.691 18.047 10.005C18.068 14.443 13.659 18.428 12.047 19.735C10.436 18.427 6.02596 14.441 6.04696 10C6.04696 6.691 8.73796 4 12.047 4Z" fill="currentColor"/>
-                                </svg>
-                            </div>
-                            <div>${venue_name}</div>
-                        </div>
-                    </div>
-                    <div class="upcoming-event-details">
-                        <h3>${name.text}</h3>
-                    </div>
-                    <p>${summary}</p>
-                    <a href="${url}" class="pill-btn w-inline-block" target="_blank">
-                        <div>RSVP Now</div>
-                        <div class="pill-btn-icon">
-                            <svg width="100%" height="100%" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M8.44968 9.81678L10.4494 9.81678L10.4494 0.331654H0.964245V2.33135H7.03546L0.257138 9.10968L1.67135 10.5239L8.44968 3.74556L8.44968 9.81678Z" fill="currentColor"/>
-                            </svg>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        `;
-    }
-}
+window.addEventListener('load', getEvents)
 
-// Scroller.js
+
+
+
+const convertPixels = (rem) => {
+    return (
+        rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
+    );
+};
+
+
 class Scroller {
     constructor() {
         this.contentWrapper = document.querySelector(".content-wrapper");
@@ -99,46 +118,49 @@ class Scroller {
         this.initClickScroll();
     }
 
-    initResize() {
-        window.addEventListener('resize', this.handleResize.bind(this));
-    }
-
-    handleResize() {
-        mmMain.add("(min-width: 768px)", () => {
-            gsap.set('.content-block', {
-                x: (index) => index > 0 ? window.innerWidth - (this.convertPixels(2) * (this.contentGrids.length - index)) : 0,
-            });
+    initResize(){
+        window.addEventListener('resize', () => {
+            mmMain.add("(min-width: 768px)", () => {
+                gsap.set('.content-block', {
+                    x: (index) => index > 0 ? window.innerWidth - (convertPixels(2) * (this.contentGrids.length - index)) : 0,
+                });
+            })
+            ScrollTrigger.refresh();
         });
-        ScrollTrigger.refresh();
     }
 
     initClickScroll() {
         this.contentBlocks.forEach((block, index) => {
-            block.querySelector('.content-block-identifier').addEventListener('click', () => this.scrollToBlock(index));
+            block.querySelector('.content-block-identifier').addEventListener('click', () => {
+                this.scrollToBlock(index);
+            });
         });
     }
 
     scrollToBlock(index) {
-        let newBlocks = this.contentBlocks.slice(index);
+        let newBlocks = this.contentBlocks.toSpliced(index)
         const getWidth = () => {
             return newBlocks.reduce((acc, block) => acc + block.querySelector('.content-grid').scrollWidth, 0);
         }
+        let b = index > 1 ? (window.innerWidth - (window.innerWidth*(0.10 * (this.contentBlocks.length - newBlocks.length)))) : window.innerWidth*0.15 + convertPixels(5);
 
-        if (index > 0) {
+        if(index>0){
             gsap.to(window, {
-                scrollTo: { y: getWidth() },
+                scrollTo: { y: getWidth() + b},
                 duration: 1,
                 ease: "power2.inOut"
             });
         }
+
+
     }
 
     initScroll() {
         const getTotalWidth = () => {
-            return this.contentBlocks.reduce((acc, block) => acc + block.offsetWidth, 0);
+            return this.contentBlocks.reduce((acc, block) => acc + block.scrollWidth, 0);
         }
 
-        let timeline;
+        let timeline
         mmMain.add("(min-width: 768px)", () => {
             timeline = gsap.timeline({
                 scrollTrigger: {
@@ -150,45 +172,49 @@ class Scroller {
                     invalidateOnRefresh: true,
                 },
             });
+        });
 
-            this.contentBlocks.forEach((block, index) => {
-                const grid = this.contentGrids[index];
 
-                if (grid) {
-                    const getGridWidth = () => {
-                        return index === this.contentGrids.length - 1 ? grid.scrollWidth - window.innerWidth + (window.innerWidth * 0.15) : grid.scrollWidth;
-                    }
-                    let gridProgress = { value: 0 };
+        this.contentBlocks.forEach((block, index) => {
+            const grid = this.contentGrids[index];
 
+            if (grid) {
+                const getGridWidth = () => {
+                    return index === this.contentGrids.length - 1 ? grid.scrollWidth - window.innerWidth + (window.innerWidth * 0.15) : grid.scrollWidth;
+                }
+                let gridProgress = {value: 0};  // Custom progress tracker for this grid
+
+                // Move the current grid
+                mmMain.add("(min-width: 768px)", () => {
                     timeline.to(grid, {
                         x: -getGridWidth(),
-                        duration: (getGridWidth() + this.convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth(),
+                        duration: (getGridWidth() + convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth(),
                         ease: "none",
                         onUpdate: () => {
                             gridProgress.value = gsap.getProperty(grid, "x") / -getGridWidth();
-                            const totalProgress = index < this.contentGrids.length - 1 ? Math.min(1, Math.max(0, gridProgress.value)) : Math.min(1, Math.max(0, gridProgress.value)) * 0.85;
-                            gsap.set(grid.parentElement.querySelector('.scroll-indicator'), { width: `${totalProgress * 100}%` });
+                            const totalProgress =  index < this.contentGrids.length -1 ? Math.min(1, Math.max(0, gridProgress.value)) : Math.min(1, Math.max(0, gridProgress.value))*0.85;
+                            gsap.set(grid.parentElement.querySelector('.scroll-indicator'), {width: `${totalProgress * 100}%`});
+                            // console.log(`Grid ${index} progress:`, totalProgress);
                         }
                     }, index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0);
+                });
 
-                    if (index < this.contentBlocks.length - 1) {
+                // Start moving the next block when the current grid is window.innerWidth away from its end
+                if (index < this.contentBlocks.length - 1) {
+                    mmMain.add("(min-width: 768px)", () => {
                         timeline.to(this.contentBlocks[index + 1], {
-                            x: this.convertPixels(5) + this.convertPixels((index + 1) * 2),
-                            duration: (window.innerWidth - this.convertPixels(9.5)) / getTotalWidth(),
+                            x: convertPixels(5) + convertPixels((index + 1) * 2),
+                            duration: (window.innerWidth - convertPixels(9.5)) / getTotalWidth(),
                             ease: "none",
-                        }, `-=${(window.innerWidth - this.convertPixels((this.contentBlocks.length - index + 1) * 2)) / getTotalWidth()}`);
-                    }
+                        }, `-=${(window.innerWidth - convertPixels((this.contentBlocks.length - index + 1) * 2)) / getTotalWidth()}`);
+                    });
                 }
-            });
+            }
         });
-    }
-
-    convertPixels(rem) {
-        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
     }
 }
 
-// MomentsList.js
+
 class MomentsList {
     constructor(list) {
         this.list = list;
@@ -197,15 +223,17 @@ class MomentsList {
         this.prevBtn = list.querySelector('.h-content-btn.prev');
         this.nextBtn = list.querySelector('.h-content-btn.next');
         this.currentIndex = 0;
+
+        this.setInitialPositions();
+        this.nextBtn.addEventListener('click', this.nextCard.bind(this));
+        this.prevBtn.addEventListener('click', this.prevCard.bind(this));
+
+        // Add touch event listeners for swiping
         this.touchStartX = 0;
         this.touchEndX = 0;
-
-        this.init();
-    }
-
-    init() {
-        this.setInitialPositions();
-        this.addEventListeners();
+        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
     }
 
     setInitialPositions() {
@@ -226,14 +254,6 @@ class MomentsList {
         });
     }
 
-    addEventListeners() {
-        this.nextBtn.addEventListener('click', this.nextCard.bind(this));
-        this.prevBtn.addEventListener('click', this.prevCard.bind(this));
-        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
-        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
-        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
-    }
-
     updateCards(type) {
         this.items.forEach((item, index) => {
             let offset = (index - this.currentIndex + this.items.length) % this.items.length;
@@ -248,44 +268,44 @@ class MomentsList {
                 ease: "power2.out"
             });
             let tl = gsap.timeline();
-            if (type === 'next') {
+            if(type === 'next') {
                 tl.to(this.itemDetails[index], {
                     visibility: 'hidden',
-                    z: '-20rem',
+                    z:'-20rem',
                     yPercent: 50,
                     duration: 0.5,
                     zIndex: 1
                 });
                 tl.fromTo(this.itemDetails[this.currentIndex], {
                     autoAlpha: 0.5,
-                    z: '10rem',
+                    z:'10rem',
                     yPercent: 100,
                     duration: 0.5,
                     zIndex: 1
                 }, {
                     autoAlpha: 1,
-                    z: '0rem',
+                    z:'0rem',
                     yPercent: 0,
                     duration: 0.5,
                     zIndex: 5
                 }, "<");
-            } else {
+            }else{
                 tl.to(this.itemDetails[index], {
                     visibility: 'hidden',
-                    z: '10rem',
+                    z:'10rem',
                     yPercent: 100,
                     duration: 0.3,
                     zIndex: 1,
                 });
                 tl.fromTo(this.itemDetails[this.currentIndex], {
                     autoAlpha: 0.5,
-                    z: '-20rem',
+                    z:'-20rem',
                     yPercent: 100,
                     duration: 0.5,
                     zIndex: 1
                 }, {
                     autoAlpha: 1,
-                    z: '0rem',
+                    z:'0rem',
                     yPercent: 0,
                     duration: 0.5,
                     zIndex: 5
@@ -304,6 +324,7 @@ class MomentsList {
         this.updateCards('prev');
     }
 
+    // New touch event handlers
     onTouchStart(e) {
         this.touchStartX = e.touches[0].clientX;
     }
@@ -314,158 +335,148 @@ class MomentsList {
 
     onTouchEnd() {
         if (this.touchStartX - this.touchEndX > 50) {
+            // Swipe left, go to next card
             this.nextCard();
         } else if (this.touchEndX - this.touchStartX > 50) {
+            // Swipe right, go to previous card
             this.prevCard();
         }
+        // Reset values
         this.touchStartX = 0;
         this.touchEndX = 0;
     }
 }
 
-// MarqueeManager.js
-class MarqueeManager {
-    constructor() {
-        this.marquee1 = document.querySelector('.home-intro-cc-list.is-1');
-        this.marquee2 = document.querySelector('.home-intro-cc-list.is-2');
-        this.modalItems = [...document.querySelectorAll('.home-modal-item')];
-        this.modalWrapper = document.querySelector('.home-modal-wrapper');
-        this.modalCloseWrapper = document.querySelector('.home-modal-close-wrapper');
-        this.isModalOpen = false;
-        this.loop1 = null;
-        this.loop2 = null;
+const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
+momentsList.forEach((list) => new MomentsList(list));
 
-        this.init();
-    }
+const marquee1 = document.querySelector('.home-intro-cc-list.is-1');
+const marquee2 = document.querySelector('.home-intro-cc-list.is-2');
+const modalItems = [...document.querySelectorAll('.home-modal-item')];
+const modalWrapper = document.querySelector('.home-modal-wrapper');
+const modalCloseWrapper = document.querySelector('.home-modal-close-wrapper');
 
-    init() {
-        this.setupMediaQueries();
-        this.addEventListeners();
-    }
+let isModalOpen = false;
 
-    setupMediaQueries() {
-        mm.add("(min-width: 768px)", () => {
-            window.addEventListener('load', () => {
-                this.loop1 = this.setupVerticalLoop(this.marquee1);
-                this.loop2 = this.setupVerticalLoop(this.marquee2, true);
-            });
-            return () => {
-                this.loop1?.kill();
-                this.loop2?.kill();
-            };
-        });
+let loop1
+let loop2
+mm.add("(min-width: 768px)", () => {
+    // Desktop version
+    window.addEventListener('load', () => {
+        loop1 = setupVerticalLoop(marquee1);
+        loop2 = setupVerticalLoop(marquee2, true);
+    });
 
-        mm.add("(max-width: 767px)", () => {
-            this.loop1 = this.setupHorizontalLoop(this.marquee1);
-            this.loop2 = this.setupHorizontalLoop(this.marquee2, true);
-            return () => {
-                this.loop1?.kill();
-                this.loop2?.kill();
-            };
-        });
-    }
+    return () => {
+        // Cleanup function
+        loop1.kill();
+        loop2.kill();
+    };
+});
 
-    addEventListeners() {
-        this.modalCloseWrapper.addEventListener('click', this.handleModalClose.bind(this));
-    }
+mm.add("(max-width: 767px)", () => {
+    // Mobile version
+    loop1 = setupHorizontalLoop(marquee1);
+    loop2 = setupHorizontalLoop(marquee2, true);
 
-    setupVerticalLoop(marquee, reverse = false) {
-        const items = [...marquee.querySelectorAll('.home-intro-cc-item')];
-        const loop = verticalLoop(items, {
-            paused: false,
-            repeat: -1,
-            speed: 0.5,
-            reversed: reverse
-        });
+    return () => {
+        // Cleanup function
+        loop1.kill();
+        loop2.kill();
+    };
+});
 
-        this.setupMarqueeListeners(marquee, loop);
-        return loop;
-    }
+function setupVerticalLoop(marquee, reverse = false) {
+    const items = [...marquee.querySelectorAll('.home-intro-cc-item')];
+    const loop = verticalLoop(items, {
+        paused: false,
+        repeat: -1,
+        speed: 0.5,
+        reversed: reverse
+    });
 
-    setupHorizontalLoop(marquee, reverse = false) {
-        const items = [...marquee.querySelectorAll('.home-intro-cc-item')];
-        const loop = horizontalLoop(items, {
-            paused: false,
-            repeat: -1,
-            speed: 0.4,
-            reversed: reverse
-        });
+    setupMarqueeListeners(marquee, loop);
+    return loop;
+}
 
-        this.setupMarqueeListeners(marquee, loop);
-        return loop;
-    }
+function setupHorizontalLoop(marquee, reverse = false) {
+    const items = [...marquee.querySelectorAll('.home-intro-cc-item')];
+    const loop = horizontalLoop(items, {
+        paused: false,
+        repeat: -1,
+        speed: 0.4,
+        reversed: reverse
+    });
 
-    setupMarqueeListeners(marquee, loop) {
-        marquee.addEventListener('click', (e) => this.handleMarqueeItemClick(e, loop));
-        marquee.addEventListener('mouseover', () => this.pauseMarquee(loop));
-        marquee.addEventListener('mouseout', () => this.resumeMarquee(loop));
-    }
+    setupMarqueeListeners(marquee, loop);
+    return loop;
+}
 
-    handleMarqueeItemClick(e, loop) {
-        const clickedItem = e.target.closest('.home-intro-cc-item');
-        if (!clickedItem) return;
+function setupMarqueeListeners(marquee, loop) {
+    marquee.addEventListener('click', (e) => handleMarqueeItemClick(e, loop));
+    marquee.addEventListener('mouseover', () => pauseMarquee(loop));
+    marquee.addEventListener('mouseout', () => resumeMarquee(loop));
+}
 
-        this.isModalOpen = true;
+function handleMarqueeItemClick(e, loop) {
+    const clickedItem = e.target.closest('.home-intro-cc-item');
+    if (!clickedItem) return;
 
-        // Stop the marquee
-        this.loop1.pause();
-        this.loop2.pause();
+    isModalOpen = true;
 
-        // Disable scrolling
-        document.body.style.overflow = 'hidden';
+    // Stop the marquee
+    loop1.pause();
+    loop2.pause()
 
-        // Show modal wrapper
-        gsap.set(this.modalWrapper, { display: 'flex' });
+    // Disable scrolling
+    document.body.style.overflow = 'hidden';
 
-        // Get data-slug and show corresponding modal item
-        const slug = clickedItem.getAttribute('data-slug');
-        const correspondingModalItem = this.modalItems.find(item => item.getAttribute('data-slug') === slug);
-        if (correspondingModalItem) {
-            gsap.to(correspondingModalItem, { opacity: 1, duration: 0.3 });
-        }
-    }
 
-    handleModalClose() {
-        this.isModalOpen = false;
+    // Show modal wrapper
+    gsap.set(modalWrapper, { display: 'flex' });
 
-        // Hide all modal items
-        gsap.to(this.modalItems, { opacity: 0, duration: 0.3 });
-
-        // Hide modal wrapper
-        gsap.set(this.modalWrapper, { display: 'none' });
-
-        // Re-enable scrolling
-        document.body.style.overflow = '';
-
-        // Resume both marquees
-        this.loop1.resume();
-        this.loop2.resume();
-    }
-
-    pauseMarquee(marqueeLoop) {
-        if (!this.isModalOpen) {
-            marqueeLoop.pause();
-        }
-    }
-
-    resumeMarquee(marqueeLoop) {
-        if (!this.isModalOpen) {
-            marqueeLoop.resume();
-        }
+    // Get data-slug and show corresponding modal item
+    const slug = clickedItem.getAttribute('data-slug');
+    const correspondingModalItem = modalItems.find(item => item.getAttribute('data-slug') === slug);
+    if (correspondingModalItem) {
+        gsap.to(correspondingModalItem, { opacity: 1, duration: 0.3 });
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+function handleModalClose() {
+    isModalOpen = false;
 
-    const eventManager = new EventManager('https://afro-charities-events.vercel.app/api/events', document.querySelector('.upcoming-events-wrapper'));
-    eventManager.renderEvents();
+    // Hide all modal items
+    gsap.to(modalItems, { opacity: 0, duration: 0.3 });
 
-    const momentsLists = [...document.querySelectorAll('.moments-content-wrapper')];
-    momentsLists.forEach(list => new MomentsList(list));
+    // Hide modal wrapper
+    gsap.set(modalWrapper, { display: 'none' });
 
-   new MarqueeManager();
-});
+    // Re-enable scrolling
+    document.body.style.overflow = '';
+
+    // Resume both marquees
+    //mm.revert();  // This will reapply the current context, effectively resuming the loops
+    loop1.resume();
+    loop2.resume();
+}
+
+function pauseMarquee(marqueeLoop) {
+    if (!isModalOpen) {
+        marqueeLoop.pause();
+    }
+}
+
+function resumeMarquee(marqueeLoop) {
+    if (!isModalOpen) {
+        marqueeLoop.resume();
+    }
+}
+
+// Add click event listener to modal close wrapper
+modalCloseWrapper.addEventListener('click', handleModalClose);
+
+
 /*
 This helper function makes a group of elements animate along the y-axis in a seamless, responsive loop.
 

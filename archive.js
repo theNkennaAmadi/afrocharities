@@ -6,41 +6,147 @@ import Swiper from "swiper";
  */
 
 
-let mm = gsap.matchMedia();
-let mx = gsap.matchMedia();
+class ArchiveManager {
+    constructor() {
+        this.mm = gsap.matchMedia();
+        this.mx = gsap.matchMedia();
+        this.scroller = null;
+        this.swiper = null;
+        this.slidesToShow = window.innerHeight / this.remToPixels(8);
+        this.slides = document.querySelectorAll('.swiper-slide');
+        this.momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
+        this.archiveItems = document.querySelectorAll('.archival-process-item');
 
-gsap.registerPlugin(ScrollTrigger);
+        this.init();
+    }
 
-const slidesToShow = window.innerHeight / remToPixels(8);
-const slides = document.querySelectorAll('.swiper-slide');
-if(slides.length < slidesToShow){
-    gsap.set('.v-content-btn-wrapper', {display: 'none'})
-}
+    init() {
+        gsap.registerPlugin(ScrollTrigger);
+        this.initSwiper();
+        this.initScroller();
+        this.initMomentsList();
+        this.initArchiveItems();
+    }
 
+    initSwiper() {
+        if (this.slides.length < this.slidesToShow) {
+            gsap.set('.v-content-btn-wrapper', { display: 'none' });
+        }
 
-const swiper = new Swiper('.swiper', {
-    // Optional parameters
-    direction: 'vertical',
-    loop: true,
-    autoHeight: true,
-    slidesPerGroup: 1,
-    slidesPerGroupAuto: true,
-    slidesPerView: "auto",
-    // Navigation arrows
-    navigation: {
-        nextEl: '.v-content-btn.next',
-        prevEl: '.v-content-btn.prev',
-    },
+        this.swiper = new Swiper('.swiper', {
+            direction: 'vertical',
+            loop: true,
+            autoHeight: true,
+            slidesPerGroup: 1,
+            slidesPerGroupAuto: true,
+            slidesPerView: "auto",
+            navigation: {
+                nextEl: '.v-content-btn.next',
+                prevEl: '.v-content-btn.prev',
+            },
+        });
+    }
 
-});
+    initScroller() {
+        window.setTimeout(() => {
+            this.scroller = new Scroller();
+        }, 1000);
+    }
 
+    initMomentsList() {
+        this.momentsList.forEach((list) => new MomentsList(list));
+    }
 
-function remToPixels(rem) {
-    // Get the root font size
-    const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    initArchiveItems() {
+        this.archiveItems.forEach((item) => {
+            let isExpanded = false;
+            item.addEventListener('click', () => this.toggleArchiveItem(item, isExpanded));
+        });
+    }
 
-    // Convert rem to pixels
-    return rem * rootFontSize;
+    toggleArchiveItem(item, isExpanded) {
+        const content = item.querySelector('.archive-process-content');
+        const otherContents = Array.from(this.archiveItems)
+            .filter(otherItem => otherItem !== item)
+            .map(otherItem => otherItem.querySelector('.archive-process-content'));
+
+        if (isExpanded) {
+            this.collapseArchiveItem(content);
+        } else {
+            this.expandArchiveItem(content, otherContents);
+        }
+
+        isExpanded = !isExpanded;
+    }
+
+    collapseArchiveItem(content) {
+        this.mx.add('(min-width:768px)', () => {
+            gsap.to(content, {
+                width: '0rem',
+                duration: 0.5,
+                ease: "power2.out",
+                immediateRender: false,
+                onComplete: () => this.updateScroll()
+            });
+        });
+
+        this.mx.add('(max-width:767px)', () => {
+            gsap.to(content, {
+                height: '0rem',
+                duration: 0.5,
+                ease: "power2.out",
+                immediateRender: false,
+                onComplete: () => this.updateScroll()
+            });
+        });
+    }
+
+    expandArchiveItem(content, otherContents) {
+        this.mx.add('(min-width:768px)', () => {
+            gsap.to(otherContents, {
+                width: '0rem',
+                duration: 0.5,
+                ease: "power2.out",
+                immediateRender: false,
+            });
+
+            gsap.to(content, {
+                width: '36rem',
+                duration: 1,
+                ease: "power2.out",
+                immediateRender: false,
+                onComplete: () => this.updateScroll()
+            });
+        });
+
+        this.mx.add('(max-width:767px)', () => {
+            gsap.to(otherContents, {
+                height: '0rem',
+                duration: 0.5,
+                ease: "power2.out",
+                immediateRender: false,
+            });
+
+            gsap.to(content, {
+                height: 'auto',
+                duration: 1,
+                ease: "power2.out",
+                immediateRender: false,
+                onComplete: () => this.updateScroll()
+            });
+        });
+    }
+
+    updateScroll() {
+        if (this.scroller) {
+            setTimeout(() => this.scroller.updateScroll(), 50);
+        }
+    }
+
+    remToPixels(rem) {
+        const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        return rem * rootFontSize;
+    }
 }
 
 class Scroller {
@@ -51,93 +157,68 @@ class Scroller {
     }
 
     init() {
-        //this.calculateScrollValues();
         this.initHorScroll();
-
-        // Listen for resize events
         window.addEventListener('resize', () => {
             ScrollTrigger.refresh();
-        })
-
+        });
         this.checkAnchorOnLoad();
     }
 
     updateScroll() {
-        const newScrollAmount = this.getScrollAmount();
-
-        /*
-        ScrollTrigger.getAll().forEach(st => {
-            if (st.vars.trigger === this.scrollWrapper) {
-                st.vars.end = `+=${newScrollAmount * -1}`;
-                 st.refresh(true);  // Force recalculation of the ScrollTrigger
-               // st.update();  // Force update of the ScrollTrigger
-            }
-        });
-
-         */
-
-        ScrollTrigger.refresh()
-
-
+        ScrollTrigger.refresh();
     }
 
-    getScrollAmount(){
+    getScrollAmount() {
         this.scrollWidth = this.scrollContainer.scrollWidth;
-        return - (this.scrollWidth - window.innerWidth);
+        return -(this.scrollWidth - window.innerWidth);
     }
 
     initHorScroll() {
-        mm.add('(min-width:768px)', () => {
-            let scrollTween= gsap.to(this.scrollContainer, {
-                    x: () => this.getScrollAmount(),
-                    duration: 1,
-                    ease: "none",
-                    scrollTrigger:{
-                        trigger: this.scrollWrapper,
-                        pin: true,
-                        scrub: 1,
-                        start: 'top top',
-                        end: () => `+=${this.getScrollAmount() * -1}`,
-                        invalidateOnRefresh: true,
-                        onUpdate: (self) => {
-                            const progress = self.progress * 100;
-                            gsap.to('.scroll-indicator', {width: `${progress}%`} )
-                        }
+        this.mm.add('(min-width:768px)', () => {
+            gsap.to(this.scrollContainer, {
+                x: () => this.getScrollAmount(),
+                duration: 1,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: this.scrollWrapper,
+                    pin: true,
+                    scrub: 1,
+                    start: 'top top',
+                    end: () => `+=${this.getScrollAmount() * -1}`,
+                    invalidateOnRefresh: true,
+                    onUpdate: (self) => {
+                        const progress = self.progress * 100;
+                        gsap.to('.scroll-indicator', { width: `${progress}%` });
                     }
-                });
-
+                }
+            });
         });
-
     }
 
-    // Function to scroll to a specific section
     scrollToSection(sectionId) {
         const section = document.getElementById(sectionId).previousElementSibling;
         const mainSection = document.getElementById(sectionId);
         if (section) {
-            const scrollContainer = document.querySelector('.component-wrapper');
             const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
-            if(window.innerWidth < 768){
+            if (window.innerWidth < 768) {
                 gsap.to(window, {
                     scrollTo: mainSection.getBoundingClientRect().top - 64,
                     duration: 1
-                })
-            }else{
+                });
+            } else {
                 gsap.to(window, {
                     scrollTo: sectionOffset,
                     duration: 1,
                     ease: "power2.out"
-                })
+                });
             }
 
-            // Update the scroll indicator
-            const scrollWidth = scrollContainer.scrollWidth;
+            const scrollWidth = this.scrollContainer.scrollWidth;
             const progress = (sectionOffset / (scrollWidth - window.innerWidth)) * 100;
-            gsap.to('.scroll-indicator', {width: `${progress}%`, duration: 1});
+            gsap.to('.scroll-indicator', { width: `${progress}%`, duration: 1 });
         }
     }
 
-    // Function to check for anchor links on page load
     checkAnchorOnLoad() {
         if (window.location.hash) {
             const sectionId = window.location.hash.substring(1);
@@ -145,14 +226,6 @@ class Scroller {
         }
     }
 }
-
-let scroller;
-
-window.setTimeout(() => {
-    scroller = new Scroller();
-}, 1000);
-
-
 
 class MomentsList {
     constructor(list) {
@@ -162,25 +235,20 @@ class MomentsList {
         this.prevBtn = list.querySelector('.h-content-btn.prev');
         this.nextBtn = list.querySelector('.h-content-btn.next');
         this.currentIndex = 0;
-
-        this.setInitialPositions();
-        this.nextBtn.addEventListener('click', this.nextCard.bind(this));
-        this.prevBtn.addEventListener('click', this.prevCard.bind(this));
-
-        // Add touch event listeners for swiping
         this.touchStartX = 0;
         this.touchEndX = 0;
-        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
-        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
-        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
+
+        this.init();
+    }
+
+    init() {
+        this.setInitialPositions();
+        this.addEventListeners();
     }
 
     setInitialPositions() {
         this.items.forEach((item, index) => {
-            let rotation = 0;
-            if (index !== 0) {
-                rotation = (index % 2 === 0) ? 5 : -5;
-            }
+            let rotation = index !== 0 ? (index % 2 === 0 ? 5 : -5) : 0;
             gsap.set(item, {
                 rotation: rotation,
                 zIndex: this.items.length - index,
@@ -193,58 +261,64 @@ class MomentsList {
         });
     }
 
+    addEventListeners() {
+        this.nextBtn.addEventListener('click', this.nextCard.bind(this));
+        this.prevBtn.addEventListener('click', this.prevCard.bind(this));
+        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
+    }
+
     updateCards(type) {
         this.items.forEach((item, index) => {
             let offset = (index - this.currentIndex + this.items.length) % this.items.length;
-            let rotation = 0;
-            if (offset !== 0) {
-                rotation = (offset % 2 === 0) ? 5 : -5;
-            }
+            let rotation = offset !== 0 ? (offset % 2 === 0 ? 5 : -5) : 0;
             gsap.to(item, {
                 rotation: rotation,
                 zIndex: this.items.length - offset,
                 duration: 0.5,
                 ease: "power2.out"
             });
+
             let tl = gsap.timeline();
-            if(type === 'next') {
+            if (type === 'next') {
                 tl.to(this.itemDetails[index], {
                     visibility: 'hidden',
-                    z:'-20rem',
+                    z: '-20rem',
                     yPercent: 50,
                     duration: 0.5,
                     zIndex: 1
                 });
                 tl.fromTo(this.itemDetails[this.currentIndex], {
                     autoAlpha: 0.5,
-                    z:'10rem',
+                    z: '10rem',
                     yPercent: 100,
                     duration: 0.5,
                     zIndex: 1
                 }, {
                     autoAlpha: 1,
-                    z:'0rem',
+                    z: '0rem',
                     yPercent: 0,
                     duration: 0.5,
                     zIndex: 5
                 }, "<");
-            }else{
+            } else {
                 tl.to(this.itemDetails[index], {
                     visibility: 'hidden',
-                    z:'10rem',
+                    z: '10rem',
                     yPercent: 100,
                     duration: 0.3,
                     zIndex: 1,
                 });
                 tl.fromTo(this.itemDetails[this.currentIndex], {
                     autoAlpha: 0.5,
-                    z:'-20rem',
+                    z: '-20rem',
                     yPercent: 100,
                     duration: 0.5,
                     zIndex: 1
                 }, {
                     autoAlpha: 1,
-                    z:'0rem',
+                    z: '0rem',
                     yPercent: 0,
                     duration: 0.5,
                     zIndex: 5
@@ -263,7 +337,6 @@ class MomentsList {
         this.updateCards('prev');
     }
 
-    // New touch event handlers
     onTouchStart(e) {
         this.touchStartX = e.touches[0].clientX;
     }
@@ -274,114 +347,16 @@ class MomentsList {
 
     onTouchEnd() {
         if (this.touchStartX - this.touchEndX > 50) {
-            // Swipe left, go to next card
             this.nextCard();
         } else if (this.touchEndX - this.touchStartX > 50) {
-            // Swipe right, go to previous card
             this.prevCard();
         }
-        // Reset values
         this.touchStartX = 0;
         this.touchEndX = 0;
     }
 }
 
-const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
-momentsList.forEach((list) => new MomentsList(list));
-
-
-
-const archiveItems = document.querySelectorAll('.archival-process-item');
-
-archiveItems.forEach((item) => {
-    let isExpanded = false;
-
-    item.addEventListener('click', () => {
-        const content = item.querySelector('.archive-process-content');
-        const otherContents = Array.from(archiveItems)
-            .filter(otherItem => otherItem !== item)
-            .map(otherItem => otherItem.querySelector('.archive-process-content'));
-
-        if (isExpanded) {
-            mx.add('(min-width:768px)', () => {
-                gsap.to(content, {
-                    width: '0rem',
-                    duration: 0.5,
-                    ease: "power2.out",
-                    immediateRender: false,
-                    onComplete: () => {
-                        if (scroller) {
-                            setTimeout(() => scroller.updateScroll(), 0);
-                        }
-                    }
-                });
-            });
-
-            mx.add('(max-width:767px)', () => {
-                gsap.to(content, {
-                    height: '0rem',
-                    duration: 0.5,
-                    ease: "power2.out",
-                    immediateRender: false,
-                    onComplete: () => {
-                        if (scroller) {
-                            setTimeout(() => scroller.updateScroll(), 0);
-                        }
-                    }
-                });
-            });
-
-            isExpanded = false;
-        } else {
-            mx.add('(min-width:768px)', () => {
-                gsap.to(otherContents, {
-                    width: '0rem',
-                    duration: 0.5,
-                    ease: "power2.out",
-                    immediateRender: false,
-                });
-
-                gsap.to(content, {
-                    width: '36rem',
-                    duration: 1,
-                    ease: "power2.out",
-                    immediateRender: false,
-
-                    onComplete: () => {
-                        if (scroller) {
-                            setTimeout(() => scroller.updateScroll(), 50);
-                        }
-                    }
-                });
-            });
-
-            mx.add('(max-width:767px)', () => {
-                gsap.to(otherContents, {
-                    height: '0rem',
-                    duration: 0.5,
-                    ease: "power2.out",
-                    immediateRender: false,
-                });
-
-                gsap.to(content, {
-                    height: 'auto',
-                    duration: 1,
-                    ease: "power2.out",
-                    immediateRender: false,
-                    onComplete: () => {
-                        if (scroller) {
-                            setTimeout(() => scroller.updateScroll(), 50);
-                        }
-                    }
-                });
-            });
-
-            isExpanded = true;
-        }
-    });
+// Initialize the ArchiveManager
+window.addEventListener('load', () => {
+    new ArchiveManager();
 });
-
-
-
-
-
