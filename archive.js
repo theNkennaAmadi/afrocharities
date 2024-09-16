@@ -8,7 +8,6 @@ import Swiper from "swiper";
 
 class ArchiveManager {
     constructor() {
-        this.mm = gsap.matchMedia();
         this.mx = gsap.matchMedia();
         this.scroller = null;
         this.swiper = null;
