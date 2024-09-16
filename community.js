@@ -5,9 +5,8 @@ import Swiper from "swiper";
 
  */
 // Initialize the CommunityManager
-let communityManager;
-
 gsap.registerPlugin(ScrollTrigger);
+
 class CommunityManager {
     constructor() {
         this.mm = gsap.matchMedia();
@@ -56,32 +55,6 @@ class CommunityManager {
         const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
         return rem * rootFontSize;
     }
-
-    getScrollLookup(targets, { start, pinnedContainer, containerAnimation }) {
-        let triggers = gsap.utils.toArray(targets).map((el) =>
-            ScrollTrigger.create({
-                trigger: el,
-                start: start || "top top",
-                pinnedContainer: pinnedContainer,
-                refreshPriority: -10,
-                containerAnimation: containerAnimation,
-            })
-        );
-        let st = containerAnimation && containerAnimation.scrollTrigger;
-        return (target) => {
-            let t = gsap.utils.toArray(target)[0],
-                i = triggers.length;
-            while (i-- && triggers[i].trigger !== t) {}
-            if (i < 0) {
-                return console.warn("target not found", target);
-            }
-            return containerAnimation
-                ? st.start +
-                (triggers[i].start / containerAnimation.duration()) *
-                (st.end - st.start)
-                : triggers[i].start;
-        };
-    }
 }
 
 class Scroller {
@@ -129,7 +102,7 @@ class Scroller {
     scrollToSection(sectionId) {
         const section = document.getElementById(sectionId).previousElementSibling;
         const mainSection = document.getElementById(sectionId);
-        let getPosition = communityManager.getScrollLookup("[h-section]", {
+        let getPosition = this.getScrollLookup("[h-section]", {
             containerAnimation: this.scrollTriggerInstance,
             start: "left left",
         });
@@ -151,7 +124,6 @@ class Scroller {
                     ease: "power2.out"
                 });
             }
-           // console.log(progress, this.getScrollAmount(), this.getScrollAmount() * (progress / 100));
             gsap.to('.scroll-indicator', { width: `${progress}%`, duration: 1 });
         }
     }
@@ -161,6 +133,32 @@ class Scroller {
             const sectionId = window.location.hash.substring(1);
             this.scrollToSection(sectionId);
         }
+    }
+
+    getScrollLookup(targets, { start, pinnedContainer, containerAnimation }) {
+        let triggers = gsap.utils.toArray(targets).map((el) =>
+            ScrollTrigger.create({
+                trigger: el,
+                start: start || "top top",
+                pinnedContainer: pinnedContainer,
+                refreshPriority: -10,
+                containerAnimation: containerAnimation,
+            })
+        );
+        let st = containerAnimation && containerAnimation.scrollTrigger;
+        return (target) => {
+            let t = gsap.utils.toArray(target)[0],
+                i = triggers.length;
+            while (i-- && triggers[i].trigger !== t) {}
+            if (i < 0) {
+                return console.warn("target not found", target);
+            }
+            return containerAnimation
+                ? st.start +
+                (triggers[i].start / containerAnimation.duration()) *
+                (st.end - st.start)
+                : triggers[i].start;
+        };
     }
 }
 
@@ -292,7 +290,7 @@ class MomentsList {
     }
 }
 
-
+let communityManager;
 window.addEventListener('load', () => {
     communityManager = new CommunityManager();
 });
