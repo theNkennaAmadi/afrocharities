@@ -23,15 +23,40 @@ class EventManager {
         this.scrollTriggerInstance = null;
         this.mm = gsap.matchMedia();
 
-        this.init();
+        this.init().then(()=>{
+            this.initScrollTrigger();
+            this.initSwiper();
+            this.checkAnchorOnLoad();
+            this.setupAnchorLinkListeners();
+        })
     }
 
     async init() {
         await this.getEvents();
-        this.initScrollTrigger();
-        this.initSwiper();
-        this.checkAnchorOnLoad();
-        this.addEventListeners();
+    }
+
+    setupAnchorLinkListeners() {
+        document.addEventListener('click', (e) => {
+            const anchor = e.target.closest('a[href*="#"]');
+            if (anchor) {
+                e.preventDefault();
+                const fullHref = anchor.getAttribute('href');
+                const [pathname, hash] = fullHref.split('#');
+                const currentPathname = window.location.pathname;
+                const currentHash = window.location.hash.slice(1);
+
+                if (pathname === currentPathname && hash === currentHash) {
+                    // If we're on the same page and section, just reload
+                    window.location.reload();
+                } else if (pathname === currentPathname) {
+                    // If we're on the same page but different section, scroll to it
+                    this.scrollToSection(hash);
+                } else {
+                    // If it's a different page, navigate to it
+                    window.location.href = fullHref;
+                }
+            }
+        });
     }
 
     async getEvents() {
@@ -102,15 +127,61 @@ class EventManager {
     }
 
     initScrollTrigger() {
+        this.calculateScrollValues();
+        this.initHorScroll();
+
+        // Listen for resize events
+        window.addEventListener('resize', () => {
+            ScrollTrigger.refresh();
+            this.calculateScrollValues(); // Recalculate scroll values on resize
+        });
+
+        // Check for anchor links after initializing horizontal scroll
+        this.checkAnchorOnLoad();
+
+        document.addEventListener('click', (e) => {
+            const anchor = e.target.closest('a[href*="#"]');
+            if (anchor) {
+                e.preventDefault();
+                const fullHref = anchor.getAttribute('href');
+                const [pathname, hash] = fullHref.split('#');
+                const currentPathname = window.location.pathname;
+                const currentHash = window.location.hash.slice(1);
+
+                if (pathname === currentPathname && hash === currentHash) {
+                    // If we're on the same page and section, just reload
+                    window.location.reload();
+                } else if (pathname === currentPathname) {
+                    // If we're on the same page but different section, scroll to it
+                    this.scrollToSection(hash);
+                } else {
+                    // If it's a different page, navigate to it
+                    window.location.href = fullHref;
+                }
+            }
+        });
+    }
+
+    calculateScrollValues() {
+        this.scrollWidth = this.scrollContainer.scrollWidth;
+    }
+
+
+    getScrollAmount() {
+        return - (this.scrollContainer.scrollWidth - window.innerWidth);
+    }
+
+    initHorScroll() {
         this.mm.add('(min-width:768px)', () => {
             this.scrollTriggerInstance = gsap.to(this.scrollContainer, {
                 x: this.getScrollAmount(),
+                ease: "none",
                 scrollTrigger: {
                     trigger: this.scrollWrapper,
                     pin: true,
                     scrub: 1,
                     start: 'top top',
-                    end: () => `+=${this.getScrollAmount() * -1}`,
+                    end: () => `+=${-this.getScrollAmount()}`,
                     invalidateOnRefresh: true,
                     onUpdate: (self) => {
                         const progress = self.progress * 100;
@@ -121,43 +192,45 @@ class EventManager {
         });
     }
 
-    getScrollAmount() {
-        const scrollWidth = this.scrollContainer.scrollWidth;
-        return -(scrollWidth - window.innerWidth);
-    }
-
+    // Function to scroll to a specific section
     scrollToSection(sectionId) {
-        const section = document.getElementById(sectionId).previousElementSibling;
-        const mainSection = document.getElementById(sectionId);
-        if (section) {
-            const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
-            let totalScroll = this.scrollTriggerInstance.scrollTrigger.end - this.scrollTriggerInstance.scrollTrigger.start,
-                totalMovement = mainSection.offsetLeft;
-            let y = Math.round(this.scrollTriggerInstance.scrollTrigger.start + (mainSection.offsetLeft / totalMovement) * totalScroll);
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            const sectionRect = targetSection.getBoundingClientRect();
+            const containerRect = this.scrollContainer.getBoundingClientRect();
+            const targetX = -(sectionRect.left - containerRect.left);
 
-            if (window.innerWidth < 768) {
-                gsap.to(window, {
-                    scrollTo: mainSection.getBoundingClientRect().top - 64,
-                    duration: 1
-                });
-            } else {
-                gsap.to(window, {
-                    scrollTo: y,
-                    duration: 1,
-                    ease: "power2.out"
-                });
-            }
+            // Calculate the total scrollable distance
+            const totalScrollDistance = this.scrollWidth - window.innerWidth;
 
-            const scrollWidth = this.scrollContainer.scrollWidth;
-            const progress = (sectionOffset / (scrollWidth - window.innerWidth)) * 100;
-            gsap.to('.scroll-indicator', { width: `${progress}%`, duration: 1 });
+            // Calculate the progress (0 to 1) based on the targetX
+            const progress = targetX / this.getScrollAmount();
+
+            // Calculate the corresponding scroll position
+            const targetScrollPosition = progress * totalScrollDistance;
+
+            // Animate the window's scroll position
+            gsap.to(window, {
+                scrollTo: targetScrollPosition,
+                duration: 1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    // Update the URL with the new hash
+                    history.pushState(null, null, `#${sectionId}`);
+                    // Refresh ScrollTrigger to ensure everything is in sync
+                    ScrollTrigger.refresh();
+                }
+            });
         }
     }
 
+    // Function to check for anchor links on page load
     checkAnchorOnLoad() {
-        if (window.location.hash) {
-            const sectionId = window.location.hash.substring(1);
-            this.scrollToSection(sectionId);
+        if (window.innerWidth > 768) {
+            if (window.location.hash) {
+                const sectionId = window.location.hash.substring(1);
+                this.scrollToSection(sectionId);
+            }
         }
     }
 
@@ -185,11 +258,6 @@ class EventManager {
         return rem * rootFontSize;
     }
 
-    addEventListeners() {
-        window.addEventListener('resize', () => {
-            ScrollTrigger.refresh();
-        });
-    }
 }
 
 window.addEventListener('load', () => {

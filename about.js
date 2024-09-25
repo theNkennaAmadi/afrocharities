@@ -8,101 +8,122 @@ let mm = gsap.matchMedia();
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
-class About {
+class Scroller {
     constructor() {
         this.scrollWrapper = document.querySelector('.components-main-wrapper');
         this.scrollContainer = document.querySelector('.component-wrapper');
+        this.mm = gsap.matchMedia();
+
         this.init();
     }
 
     init() {
-        //this.calculateScrollValues();
+        this.calculateScrollValues();
         this.initHorScroll();
 
         // Listen for resize events
         window.addEventListener('resize', () => {
             ScrollTrigger.refresh();
+            this.calculateScrollValues(); // Recalculate scroll values on resize
         });
 
-        this.checkAnchorOnLoad()
+        // Check for anchor links after initializing horizontal scroll
+        this.checkAnchorOnLoad();
 
-        /*
-        document.addEventListener('click', (event) => {
-            const anchor = event.target.closest('a')?.getAttribute('href')?.includes('#')
+        document.addEventListener('click', (e) => {
+            const anchor = e.target.closest('a[href*="#"]');
             if (anchor) {
-                console.log(anchor);
-                this.checkAnchorOnLoad()
+                e.preventDefault();
+                const fullHref = anchor.getAttribute('href');
+                const [pathname, hash] = fullHref.split('#');
+                const currentPathname = window.location.pathname;
+                const currentHash = window.location.hash.slice(1);
+
+                if (pathname === currentPathname && hash === currentHash) {
+                    // If we're on the same page and section, just reload
+                    window.location.reload();
+                } else if (pathname === currentPathname) {
+                    // If we're on the same page but different section, scroll to it
+                    this.scrollToSection(hash);
+                } else {
+                    // If it's a different page, navigate to it
+                    window.location.href = fullHref;
+                }
             }
         });
-
-         */
     }
 
-
-    getScrollAmount(){
+    calculateScrollValues() {
         this.scrollWidth = this.scrollContainer.scrollWidth;
+    }
+
+    getScrollAmount() {
         return - (this.scrollWidth - window.innerWidth);
     }
 
     initHorScroll() {
-        mm.add('(min-width:768px)', ()=>{
+        this.mm.add('(min-width:768px)', () => {
             this.scrollTriggerInstance = gsap.to(this.scrollContainer, {
-                x: this.getScrollAmount() ,
+                x: this.getScrollAmount(),
+                ease: "none",
                 scrollTrigger: {
                     trigger: this.scrollWrapper,
                     pin: true,
                     scrub: 1,
                     start: 'top top',
-                    end: () => `+=${this.getScrollAmount() *-1}`,
+                    end: () => `+=${-this.getScrollAmount()}`,
                     invalidateOnRefresh: true,
                     onUpdate: (self) => {
                         const progress = self.progress * 100;
-                        gsap.to('.scroll-indicator', {width: `${progress}%`} )
+                        gsap.to('.scroll-indicator', { width: `${progress}%` });
                     }
                 }
             });
-        })
+        });
     }
 
     // Function to scroll to a specific section
     scrollToSection(sectionId) {
-        const section = document.getElementById(sectionId).previousElementSibling;
-        const mainSection = document.getElementById(sectionId);
-        let getPosition = getScrollLookup("[h-section]", {
-            containerAnimation: this.scrollTriggerInstance,
-            start: "left left",
-        });
-        if (section) {
-            const scrollContainer = document.querySelector('.component-wrapper');
-            const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            const sectionRect = targetSection.getBoundingClientRect();
+            const containerRect = this.scrollContainer.getBoundingClientRect();
+            const targetX = -(sectionRect.left - containerRect.left);
 
-            const scrollWidth = scrollContainer.scrollWidth;
-            const progress = (sectionOffset / (scrollWidth - window.innerWidth)) * 100;
-            const amount = (scrollWidth-window.innerWidth - (mainSection.offsetWidth)+ (window.innerWidth*0.25))*(progress/100)
-            if(window.innerWidth < 768){
-                gsap.to(window, {
-                    scrollTo: mainSection.getBoundingClientRect().top - 64,
-                    duration: 1
-                })
-            }else{
-                gsap.to(window, {
-                    scrollTo: amount,
-                    duration: 1,
-                    ease: "power2.out"
-                })
-            }
+            // Calculate the total scrollable distance
+            const totalScrollDistance = this.scrollWidth - window.innerWidth;
 
-            // Update the scroll indicator
-            //console.log(progress, this.getScrollAmount(), this.getScrollAmount()*(progress/100))
-            gsap.to('.scroll-indicator', {width: `${progress}%`, duration: 1});
+            // Calculate the progress (0 to 1) based on the targetX
+            const progress = targetX / this.getScrollAmount();
+
+            // Calculate the corresponding scroll position
+            const targetScrollPosition = progress * totalScrollDistance;
+            console.log(targetScrollPosition)
+
+
+
+            // Animate the window's scroll position
+            gsap.to(window, {
+                scrollTo: targetScrollPosition,
+                duration: 1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    // Update the URL with the new hash
+                    history.pushState(null, null, `#${sectionId}`);
+                    // Refresh ScrollTrigger to ensure everything is in sync
+                    ScrollTrigger.refresh();
+                }
+            });
         }
     }
 
     // Function to check for anchor links on page load
     checkAnchorOnLoad() {
-        if (window.location.hash) {
-            const sectionId = window.location.hash.substring(1);
-            this.scrollToSection(sectionId);
+        if (window.innerWidth > 768) {
+            if (window.location.hash) {
+                const sectionId = window.location.hash.substring(1);
+                this.scrollToSection(sectionId);
+            }
         }
     }
 }
@@ -124,9 +145,11 @@ class MomentsList {
         // Add touch event listeners for swiping
         this.touchStartX = 0;
         this.touchEndX = 0;
-        this.list.addEventListener('touchstart', this.onTouchStart.bind(this), false);
-        this.list.addEventListener('touchmove', this.onTouchMove.bind(this), false);
-        this.list.addEventListener('touchend', this.onTouchEnd.bind(this), false);
+        this.items.forEach( item => {
+            item.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+             item.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+            item.addEventListener('touchend', this.onTouchEnd.bind(this), false);
+        })
     }
 
     setInitialPositions() {
@@ -241,7 +264,7 @@ class MomentsList {
 }
 
 window.addEventListener("load", () => {
-    new About();
+    new Scroller();
     const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
     momentsList.forEach((list) => new MomentsList(list));
 })

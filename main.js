@@ -90,6 +90,7 @@ class Scroller {
         this.contentWrapper = document.querySelector(".content-wrapper");
         this.contentBlocks = [...document.querySelectorAll(".content-block")];
         this.contentGrids = this.contentBlocks.map(block => block.querySelector(".content-grid"));
+        this.blockScrollPositions = [];
         this.init();
     }
 
@@ -119,14 +120,9 @@ class Scroller {
     }
 
     scrollToBlock(index) {
-        let newBlocks = this.contentBlocks.slice(index);
-        const getWidth = () => {
-            return newBlocks.reduce((acc, block) => acc + block.querySelector('.content-grid').scrollWidth, 0);
-        }
-
-        if (index > 0) {
+        if (this.blockScrollPositions && this.blockScrollPositions[index] !== undefined) {
             gsap.to(window, {
-                scrollTo: { y: getWidth() },
+                scrollTo: this.blockScrollPositions[index],
                 duration: 1,
                 ease: "power2.inOut"
             });
@@ -136,7 +132,7 @@ class Scroller {
     initScroll() {
         const getTotalWidth = () => {
             return this.contentBlocks.reduce((acc, block) => acc + block.offsetWidth, 0);
-        }
+        };
 
         let timeline;
         mmMain.add("(min-width: 768px)", () => {
@@ -155,31 +151,82 @@ class Scroller {
                 const grid = this.contentGrids[index];
 
                 if (grid) {
+                    // Add label for each block
+                    timeline.add(`block${index}`);
+
                     const getGridWidth = () => {
-                        return index === this.contentGrids.length - 1 ? grid.scrollWidth - window.innerWidth + (window.innerWidth * 0.15) : grid.scrollWidth;
-                    }
+                        return index === this.contentGrids.length - 1
+                            ? grid.scrollWidth - window.innerWidth + window.innerWidth * 0.15
+                            : grid.scrollWidth;
+                    };
                     let gridProgress = { value: 0 };
 
-                    timeline.to(grid, {
-                        x: -getGridWidth(),
-                        duration: (getGridWidth() + this.convertPixels((this.contentGrids.length - index + 1) * 1)) / getTotalWidth(),
-                        ease: "none",
-                        onUpdate: () => {
-                            gridProgress.value = gsap.getProperty(grid, "x") / -getGridWidth();
-                            const totalProgress = index < this.contentGrids.length - 1 ? Math.min(1, Math.max(0, gridProgress.value)) : Math.min(1, Math.max(0, gridProgress.value)) * 0.85;
-                            gsap.set(grid.parentElement.querySelector('.scroll-indicator'), { width: `${totalProgress * 100}%` });
-                        }
-                    }, index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0);
+                    timeline.to(
+                        grid,
+                        {
+                            x: -getGridWidth(),
+                            duration:
+                                (getGridWidth() +
+                                    this.convertPixels(
+                                        (this.contentGrids.length - index + 1) * 1
+                                    )) /
+                                getTotalWidth(),
+                            ease: "none",
+                            onUpdate: () => {
+                                gridProgress.value = gsap.getProperty(grid, "x") / -getGridWidth();
+                                const totalProgress =
+                                    index < this.contentGrids.length - 1
+                                        ? Math.min(1, Math.max(0, gridProgress.value))
+                                        : Math.min(1, Math.max(0, gridProgress.value)) * 0.85;
+                                gsap.set(
+                                    grid.parentElement.querySelector(".scroll-indicator"),
+                                    { width: `${totalProgress * 100}%` }
+                                );
+                            },
+                        },
+                        index > 0 ? `-=${(window.innerWidth / getTotalWidth()) * 0.05}` : 0
+                    );
 
                     if (index < this.contentBlocks.length - 1) {
-                        timeline.to(this.contentBlocks[index + 1], {
-                            x: this.convertPixels(5) + this.convertPixels((index + 1) * 2),
-                            duration: (window.innerWidth - this.convertPixels(9.5)) / getTotalWidth(),
-                            ease: "none",
-                        }, `-=${(window.innerWidth - this.convertPixels((this.contentBlocks.length - index + 1) * 2)) / getTotalWidth()}`);
+                        timeline.to(
+                            this.contentBlocks[index + 1],
+                            {
+                                x:
+                                    this.convertPixels(5) +
+                                    this.convertPixels((index + 1) * 2),
+                                duration:
+                                    (window.innerWidth - this.convertPixels(9.5)) /
+                                    getTotalWidth(),
+                                ease: "none",
+                            },
+                            `-=${
+                                (window.innerWidth -
+                                    this.convertPixels(
+                                        (this.contentBlocks.length - index + 1) * 2
+                                    )) /
+                                getTotalWidth()
+                            }`
+                        );
                     }
                 }
             });
+
+            // Calculate scroll positions for each block after timeline is set up
+            ScrollTrigger.addEventListener('refresh', () => {
+                let scrollTriggerInstance = timeline.scrollTrigger;
+                this.blockScrollPositions = this.contentBlocks.map((block, index) => {
+                    let label = `block${index}`;
+                    let labelTime = timeline.labels[label];
+                    let scrollPosition =
+                        scrollTriggerInstance.start +
+                        (labelTime / timeline.duration()) *
+                        (scrollTriggerInstance.end - scrollTriggerInstance.start);
+                    return scrollPosition;
+                });
+            });
+
+            // Ensure ScrollTrigger calculations are up to date
+            ScrollTrigger.refresh();
         });
     }
 
@@ -187,6 +234,7 @@ class Scroller {
         return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
     }
 }
+
 
 // MomentsList.js
 class MomentsList {

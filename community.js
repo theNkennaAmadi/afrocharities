@@ -59,36 +59,68 @@ class CommunityManager {
 
 class Scroller {
     constructor(mm) {
-        this.mm = mm;
         this.scrollWrapper = document.querySelector('.components-main-wrapper');
         this.scrollContainer = document.querySelector('.component-wrapper');
-        this.scrollTriggerInstance = null;
+        this.mm = mm
+
         this.init();
     }
 
     init() {
+        this.calculateScrollValues();
         this.initHorScroll();
+
+        // Listen for resize events
         window.addEventListener('resize', () => {
             ScrollTrigger.refresh();
+            this.calculateScrollValues(); // Recalculate scroll values on resize
         });
+
+        // Check for anchor links after initializing horizontal scroll
         this.checkAnchorOnLoad();
+
+        document.addEventListener('click', (e) => {
+            const anchor = e.target.closest('a[href*="#"]');
+            if (anchor) {
+                e.preventDefault();
+                const fullHref = anchor.getAttribute('href');
+                const [pathname, hash] = fullHref.split('#');
+                const currentPathname = window.location.pathname;
+                const currentHash = window.location.hash.slice(1);
+
+                if (pathname === currentPathname && hash === currentHash) {
+                    // If we're on the same page and section, just reload
+                    window.location.reload();
+                } else if (pathname === currentPathname) {
+                    // If we're on the same page but different section, scroll to it
+                    this.scrollToSection(hash);
+                } else {
+                    // If it's a different page, navigate to it
+                    window.location.href = fullHref;
+                }
+            }
+        });
+    }
+
+    calculateScrollValues() {
+        this.scrollWidth = this.scrollContainer.scrollWidth;
     }
 
     getScrollAmount() {
-        this.scrollWidth = this.scrollContainer.scrollWidth;
-        return -(this.scrollWidth - window.innerWidth);
+        return - (this.scrollWidth - window.innerWidth);
     }
 
     initHorScroll() {
         this.mm.add('(min-width:768px)', () => {
             this.scrollTriggerInstance = gsap.to(this.scrollContainer, {
                 x: this.getScrollAmount(),
+                ease: "none",
                 scrollTrigger: {
                     trigger: this.scrollWrapper,
                     pin: true,
                     scrub: 1,
                     start: 'top top',
-                    end: () => `+=${this.getScrollAmount() * -1}`,
+                    end: () => `+=${-this.getScrollAmount()}`,
                     invalidateOnRefresh: true,
                     onUpdate: (self) => {
                         const progress = self.progress * 100;
@@ -99,66 +131,46 @@ class Scroller {
         });
     }
 
+    // Function to scroll to a specific section
     scrollToSection(sectionId) {
-        const section = document.getElementById(sectionId).previousElementSibling;
-        const mainSection = document.getElementById(sectionId);
-        let getPosition = this.getScrollLookup("[h-section]", {
-            containerAnimation: this.scrollTriggerInstance,
-            start: "left left",
-        });
-        if (section) {
-            const scrollContainer = document.querySelector('.component-wrapper');
-            const sectionOffset = section.offsetLeft - section.offsetWidth + window.innerWidth;
-            const scrollWidth = scrollContainer.scrollWidth;
-            const progress = (sectionOffset / (scrollWidth - window.innerWidth)) * 100;
-            const amount = (scrollWidth - window.innerWidth - mainSection.offsetWidth) * (progress / 100);
-            if (window.innerWidth < 768) {
-                gsap.to(window, {
-                    scrollTo: mainSection.getBoundingClientRect().top - 64,
-                    duration: 1
-                });
-            } else {
-                gsap.to(window, {
-                    scrollTo: amount,
-                    duration: 1,
-                    ease: "power2.out"
-                });
-            }
-            gsap.to('.scroll-indicator', { width: `${progress}%`, duration: 1 });
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            const sectionRect = targetSection.getBoundingClientRect();
+            const containerRect = this.scrollContainer.getBoundingClientRect();
+            const targetX = -(sectionRect.left - containerRect.left);
+
+            // Calculate the total scrollable distance
+            const totalScrollDistance = this.scrollWidth - window.innerWidth;
+
+            // Calculate the progress (0 to 1) based on the targetX
+            const progress = targetX / this.getScrollAmount();
+
+            // Calculate the corresponding scroll position
+            const targetScrollPosition = progress * totalScrollDistance;
+
+            // Animate the window's scroll position
+            gsap.to(window, {
+                scrollTo: targetScrollPosition,
+                duration: 1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    // Update the URL with the new hash
+                    history.pushState(null, null, `#${sectionId}`);
+                    // Refresh ScrollTrigger to ensure everything is in sync
+                    ScrollTrigger.refresh();
+                }
+            });
         }
     }
 
+    // Function to check for anchor links on page load
     checkAnchorOnLoad() {
-        if (window.location.hash) {
-            const sectionId = window.location.hash.substring(1);
-            this.scrollToSection(sectionId);
-        }
-    }
-
-    getScrollLookup(targets, { start, pinnedContainer, containerAnimation }) {
-        let triggers = gsap.utils.toArray(targets).map((el) =>
-            ScrollTrigger.create({
-                trigger: el,
-                start: start || "top top",
-                pinnedContainer: pinnedContainer,
-                refreshPriority: -10,
-                containerAnimation: containerAnimation,
-            })
-        );
-        let st = containerAnimation && containerAnimation.scrollTrigger;
-        return (target) => {
-            let t = gsap.utils.toArray(target)[0],
-                i = triggers.length;
-            while (i-- && triggers[i].trigger !== t) {}
-            if (i < 0) {
-                return console.warn("target not found", target);
+        if (window.innerWidth > 768) {
+            if (window.location.hash) {
+                const sectionId = window.location.hash.substring(1);
+                this.scrollToSection(sectionId);
             }
-            return containerAnimation
-                ? st.start +
-                (triggers[i].start / containerAnimation.duration()) *
-                (st.end - st.start)
-                : triggers[i].start;
-        };
+        }
     }
 }
 

@@ -8,6 +8,8 @@ gsap.registerPlugin(ScrollTrigger)
 gsap.config({nullTargetWarn: false});
 
 
+
+
 window.addEventListener('load', () => {
     const lottie = Webflow.require('lottie').lottie;
     const animations = lottie.getRegisteredAnimations();
@@ -60,7 +62,7 @@ window.addEventListener('load', () => {
             this.tlShowNav = gsap.timeline({paused: true});
             this.hiddenContent = this.navHiddenContentWrapper.map((content) => content.querySelector('*'));
             mm2.add('(min-width:768px)', ()=>{this.tlShowNav.to(this.nav, {borderRight: '2px solid currentColor', ease:"expo.out", duration: 0.2})})
-            this.tlShowNav.to(this.navList, {clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',ease:"expo.out", duration: 1})
+            this.tlShowNav.to(this.navList, {clipPath: 'inset(0% 0% 0% 0%)', display: 'grid',ease:"expo.out", duration: 1})
                 .to(this.navMenuBtn.querySelector('.menu-text:nth-of-type(1)'), {opacity:0}, "<")
                 .to(this.navMenuBtn.querySelector('.menu-text:nth-of-type(2)'), {opacity:1}, "<")
                 .from(this.hiddenContent, {yPercent: 110, stagger: {amount: 0.6}}, "<0.5")
@@ -131,7 +133,7 @@ window.addEventListener('load', () => {
     //Disable right click
     document.addEventListener('contextmenu', event => event.preventDefault());
 
-    gsap.to('.component-wrapper', {opacity: 1, duration: 1.5, delay: 0.3})
+    gsap.to('.component-wrapper', {opacity: 1, duration: 1.5, delay: 0.6})
 
     const upNextLink = document.querySelector('.up-next-cta');
     if (!upNextLink){
@@ -152,6 +154,8 @@ window.addEventListener('load', () => {
 
 
 });
+
+
 
 
 
