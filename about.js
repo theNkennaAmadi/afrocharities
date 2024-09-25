@@ -98,8 +98,6 @@ class Scroller {
 
             // Calculate the corresponding scroll position
             const targetScrollPosition = progress * totalScrollDistance;
-            console.log(targetScrollPosition)
-
 
 
             // Animate the window's scroll position
