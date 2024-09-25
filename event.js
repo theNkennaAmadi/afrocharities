@@ -12,7 +12,7 @@ import gsap from "gsap";
 
  */
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 class EventManager {
     constructor() {
@@ -128,6 +128,7 @@ class EventManager {
 
     initScrollTrigger() {
         window.setTimeout(() => {
+            this.calculateScrollValues()
             this.initHorScroll()
         }, 100);
 
@@ -161,6 +162,7 @@ class EventManager {
                 }
             }
         });
+
     }
 
     calculateScrollValues() {
@@ -201,11 +203,14 @@ class EventManager {
             const containerRect = this.scrollContainer.getBoundingClientRect();
             const targetX = -(sectionRect.left - containerRect.left);
 
+
             // Calculate the total scrollable distance
-            const totalScrollDistance = this.scrollWidth - window.innerWidth;
+            const totalScrollDistance = this.scrollContainer.scrollWidth - window.innerWidth;
+
 
             // Calculate the progress (0 to 1) based on the targetX
             const progress = targetX / this.getScrollAmount();
+
 
             // Calculate the corresponding scroll position
             const targetScrollPosition = progress * totalScrollDistance;
