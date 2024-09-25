@@ -127,8 +127,9 @@ class EventManager {
     }
 
     initScrollTrigger() {
-        this.calculateScrollValues();
-        this.initHorScroll();
+        window.setTimeout(() => {
+            this.initHorScroll()
+        }, 100);
 
         // Listen for resize events
         window.addEventListener('resize', () => {
