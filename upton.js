@@ -21,7 +21,7 @@ class UptonManager {
     }
 
     addEventListeners() {
-        document.addEventListener('htmx:afterRequest', this.handleAfterRequest.bind(this));
+        document.addEventListener('htmx:afterSettle', this.handleAfterRequest.bind(this));
     }
 
     handleAfterRequest(evt) {
@@ -61,7 +61,9 @@ class UptonManager {
     }
 
     activate() {
-        this.scroller = new Scroller(this.mm);
+        setTimeout(() => {
+            this.scroller = new Scroller(this.mm);
+        }, 1000);
         const momentsList = [...document.querySelectorAll('.moments-content-wrapper')];
         momentsList.forEach((list) => new MomentsList(list));
     }
