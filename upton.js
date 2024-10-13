@@ -3,7 +3,7 @@ import {ScrollTrigger} from "gsap/ScrollTrigger";
 import {gsap} from "gsap";
 
  */
-import * as htmx from 'htmx.org';
+/*import * as htmx from 'htmx.org';*/
 
 gsap.registerPlugin(ScrollTrigger);
 class UptonManager {
@@ -53,7 +53,7 @@ class UptonManager {
             htmx.process(contentBlock);
 
             htmx.on(contentBlock, 'htmx:afterSwap', (event) => {
-                console.log('swapped');
+                //console.log('swapped');
                 resolve();
             });
         });
