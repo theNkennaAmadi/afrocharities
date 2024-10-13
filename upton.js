@@ -110,30 +110,37 @@ class UptonManager {
     }
 
     initArchiveItems() {
-        this.archiveItems.forEach((item) => {
-            item.isExpanded = false; // Initialize the expanded state
+        this.archiveItems.forEach((item, index) => {
+            item.isExpanded = index === 0; // Initialize expanded state
             item.addEventListener('click', () => this.toggleArchiveItem(item));
         });
     }
 
     toggleArchiveItem(item) {
         const content = item.querySelector('.archive-process-content');
-        const otherContents = Array.from(this.archiveItems)
-            .filter(otherItem => otherItem !== item)
-            .map(otherItem => otherItem.querySelector('.archive-process-content'));
+        const otherItems = Array.from(this.archiveItems)
+            .filter(otherItem => otherItem !== item);
+
+        const otherContents = otherItems.map(otherItem => otherItem.querySelector('.archive-process-content'));
 
         if (item.isExpanded) {
             this.collapseArchiveItem(content);
         } else {
             this.expandArchiveItem(content, otherContents);
+
+            // Update isExpanded state of other items
+            otherItems.forEach(otherItem => {
+                otherItem.isExpanded = false;
+            });
         }
 
-        item.isExpanded = !item.isExpanded; // Update the expanded state
+        item.isExpanded = !item.isExpanded;
     }
 
-
     collapseArchiveItem(content) {
-        this.mx.add('(min-width:768px)', () => {
+        const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+        if (isDesktop) {
             gsap.to(content, {
                 width: '0rem',
                 duration: 0.5,
@@ -141,9 +148,7 @@ class UptonManager {
                 immediateRender: false,
                 onComplete: () => this.updateScroll()
             });
-        });
-
-        this.mx.add('(max-width:767px)', () => {
+        } else {
             gsap.to(content, {
                 height: '0rem',
                 duration: 0.5,
@@ -151,11 +156,13 @@ class UptonManager {
                 immediateRender: false,
                 onComplete: () => this.updateScroll()
             });
-        });
+        }
     }
 
     expandArchiveItem(content, otherContents) {
-        this.mx.add('(min-width:768px)', () => {
+        const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+        if (isDesktop) {
             gsap.to(otherContents, {
                 width: '0rem',
                 duration: 0.5,
@@ -170,9 +177,7 @@ class UptonManager {
                 immediateRender: false,
                 onComplete: () => this.updateScroll()
             });
-        });
-
-        this.mx.add('(max-width:767px)', () => {
+        } else {
             gsap.to(otherContents, {
                 height: '0rem',
                 duration: 0.5,
@@ -187,7 +192,7 @@ class UptonManager {
                 immediateRender: false,
                 onComplete: () => this.updateScroll()
             });
-        });
+        }
     }
 
     updateScroll() {
