@@ -3,6 +3,8 @@ import {ScrollTrigger} from "gsap/ScrollTrigger";
 import {gsap} from "gsap";
 
  */
+import * as htmx from 'htmx.org';
+
 gsap.registerPlugin(ScrollTrigger);
 class UptonManager {
     constructor() {
@@ -16,24 +18,45 @@ class UptonManager {
     }
 
     init() {
-        this.addEventListeners();
+        this.initPage();
         this.initArchiveItems();
     }
 
-    addEventListeners() {
-        document.addEventListener('htmx:afterSettle', this.handleAfterRequest.bind(this));
-    }
-
-    handleAfterRequest(evt) {
-        this.completedCount++;
-        if (this.completedCount === this.namesWrappers.length) {
+    initPage() {
+        const setupPromises = this.namesWrappers.map(item => this.setupHtmx(item));
+        Promise.all(setupPromises).then(() => {
             this.removeAll().then(() => {
                 setTimeout(() => {
                     this.activate();
                     this.formatCurrency();
-                }, 1800);
+                }, 100);
             });
-        }
+        });
+    }
+
+    setupHtmx(item) {
+        return new Promise((resolve, reject) => {
+            const slug = item.getAttribute('data-slug');
+            const contentBlock = item.querySelector('.content-block');
+
+            if (!slug || !contentBlock) {
+                resolve(); // Resolve immediately if no slug or contentBlock
+                return;
+            }
+
+            contentBlock.setAttribute('hx-get', `/individual-contributor-types/${slug}`);
+            contentBlock.setAttribute('hx-trigger', 'load');
+            contentBlock.setAttribute('hx-target', `this`);
+            contentBlock.setAttribute('hx-select', `#${slug}`);
+
+
+            htmx.process(contentBlock);
+
+            htmx.on(contentBlock, 'htmx:afterSwap', (event) => {
+                console.log('swapped');
+                resolve();
+            });
+        });
     }
 
     removeAll() {
@@ -87,25 +110,26 @@ class UptonManager {
 
     initArchiveItems() {
         this.archiveItems.forEach((item) => {
-            let isExpanded = false;
-            item.addEventListener('click', () => this.toggleArchiveItem(item, isExpanded));
+            item.isExpanded = false; // Initialize the expanded state
+            item.addEventListener('click', () => this.toggleArchiveItem(item));
         });
     }
 
-    toggleArchiveItem(item, isExpanded) {
+    toggleArchiveItem(item) {
         const content = item.querySelector('.archive-process-content');
         const otherContents = Array.from(this.archiveItems)
             .filter(otherItem => otherItem !== item)
             .map(otherItem => otherItem.querySelector('.archive-process-content'));
 
-        if (isExpanded) {
+        if (item.isExpanded) {
             this.collapseArchiveItem(content);
         } else {
             this.expandArchiveItem(content, otherContents);
         }
 
-        isExpanded = !isExpanded;
+        item.isExpanded = !item.isExpanded; // Update the expanded state
     }
+
 
     collapseArchiveItem(content) {
         this.mx.add('(min-width:768px)', () => {
@@ -200,7 +224,7 @@ class Scroller {
     initHorScroll() {
         this.mm.add('(min-width:768px)', () => {
             gsap.to(this.scrollContainer, {
-                x: this.getScrollAmount(),
+                x: () => this.getScrollAmount(),
                 scrollTrigger: {
                     trigger: this.scrollWrapper,
                     pin: true,
@@ -216,6 +240,7 @@ class Scroller {
             });
         });
     }
+
 
     scrollToSection(sectionId) {
         const section = document.getElementById(sectionId).previousElementSibling;

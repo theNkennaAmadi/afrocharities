@@ -177,7 +177,7 @@ class EventManager {
     initHorScroll() {
         this.mm.add('(min-width:768px)', () => {
             this.scrollTriggerInstance = gsap.to(this.scrollContainer, {
-                x: this.getScrollAmount(),
+                x: () => this.getScrollAmount(),
                 ease: "none",
                 scrollTrigger: {
                     trigger: this.scrollWrapper,
