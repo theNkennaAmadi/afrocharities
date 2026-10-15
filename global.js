@@ -12,8 +12,24 @@ gsap.config({nullTargetWarn: false});
 
 window.addEventListener('load', () => {
     const lottie = Webflow.require('lottie').lottie;
-    const animations = lottie.getRegisteredAnimations();
-    const menuAnimation = animations[0];
+
+    // Look the menu lottie up on demand: it may not be registered yet when 'load' fires
+    function getMenuAnimation() {
+        const menuLottie = document.querySelector('.menu-lottie');
+        const animations = lottie.getRegisteredAnimations();
+        return animations.find(anim => menuLottie && menuLottie.contains(anim.wrapper)) || animations[0];
+    }
+
+    function playMenuAnimation(isOpen) {
+        const menuAnimation = getMenuAnimation();
+        if (!menuAnimation) return;
+        const play = () => isOpen ? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
+        if (menuAnimation.isLoaded) {
+            play();
+        } else {
+            menuAnimation.addEventListener('DOMLoaded', play);
+        }
+    }
 
     let mm2 = gsap.matchMedia();
 
@@ -69,23 +85,15 @@ window.addEventListener('load', () => {
                 .from('.embed.arrow', {yPercent: 150, duration:0.6},"<0.2")
 
             this.navMenuBtn.addEventListener('click', () => {
-                if(document.querySelector('.menu-lottie')){
-                    this.navOpen ? this.tlShowNav.reverse() : this.tlShowNav.play();
-                    if (menuAnimation.isLoaded) {
-                        this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
-                    }else{
-                        menuAnimation.addEventListener('DOMLoaded', ()=>{
-                            this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
-                        })
-                    }
-                    this.navOpen = !this.navOpen;
-                }
+                this.navOpen ? this.tlShowNav.reverse() : this.tlShowNav.play();
+                playMenuAnimation(this.navOpen);
+                this.navOpen = !this.navOpen;
             })
 
             this.navLinks.forEach((link) => {
                 link.addEventListener('click', () => {
                     this.navOpen ? this.tlShowNav.reverse() : this.tlShowNav.play();
-                    this.navOpen? menuAnimation.playSegments([80, 0], true) : menuAnimation.playSegments([30, 80], true);
+                    playMenuAnimation(this.navOpen);
                     this.navOpen = !this.navOpen;
                 });
             });
