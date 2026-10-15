@@ -127,6 +127,20 @@ window.addEventListener('load', () => {
 
     initImageReveal();
 
+    // Keep the copyright year current (e.g. "© 2024 Afro Charities" -> "© 2026 Afro Charities")
+    function updateCopyrightYear() {
+        const year = new Date().getFullYear();
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (node.textContent.includes('©')) {
+                node.textContent = node.textContent.replace(/©\s*\d{4}/, `© ${year}`);
+            }
+        }
+    }
+
+    updateCopyrightYear();
+
 
 
 
