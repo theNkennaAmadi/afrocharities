@@ -149,6 +149,39 @@ window.addEventListener('load', () => {
 
     updateCopyrightYear();
 
+    // Newsletter forms -> Mailchimp audience "Afro Charities, Inc." (replaces the retired Webflow Logic flow).
+    // Webflow still handles the submit (stores the submission and shows its success message);
+    // this sends the same email to Mailchimp's embedded-form endpoint via JSONP.
+    const MAILCHIMP_URL = 'https://afrocharities.us19.list-manage.com/subscribe/post-json?u=6abac7a61f20a9ff7f32670c4&id=c9842ee253';
+
+    function subscribeToMailchimp(email) {
+        const callbackName = `mcCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        const script = document.createElement('script');
+        window[callbackName] = (response) => {
+            if (response.result !== 'success') {
+                console.warn('Mailchimp:', response.msg);
+            }
+            delete window[callbackName];
+            script.remove();
+        };
+        script.src = `${MAILCHIMP_URL}&EMAIL=${encodeURIComponent(email)}&c=${callbackName}`;
+        document.body.appendChild(script);
+    }
+
+    function initNewsletterForms() {
+        const forms = document.querySelectorAll('#wf-form-nav-newsletter, #wf-form-Newsletter-Form');
+        forms.forEach(form => {
+            form.addEventListener('submit', () => {
+                const emailInput = form.querySelector('input[type="email"]');
+                if (emailInput && emailInput.value.trim()) {
+                    subscribeToMailchimp(emailInput.value.trim());
+                }
+            });
+        });
+    }
+
+    initNewsletterForms();
+
 
 
 
