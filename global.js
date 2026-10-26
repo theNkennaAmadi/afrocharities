@@ -427,6 +427,13 @@ window.addEventListener('load', () => {
         .ac-popup__meta div{display:flex;gap:10px}
         .ac-popup__meta dt{opacity:.7;min-width:64px}
         .ac-popup__meta dd{margin:0}
+        .ac-popup__roles{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--ac-popup-fg,#f9f3e4) 45%,transparent)}
+        .ac-popup__roles li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:14px 0;border-bottom:1px solid color-mix(in srgb,var(--ac-popup-fg,#f9f3e4) 45%,transparent)}
+        .ac-popup__role-title{font:600 21px/1.1 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.01em}
+        .ac-popup__role-meta{grid-column:1;font:400 13.5px/1.4 "Worksans Variablefont Wght",sans-serif;opacity:.85}
+        .ac-popup__role-link{grid-column:2;grid-row:1 / span 2;justify-self:end;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font:600 14px/1 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;color:var(--ac-popup-fg,#f9f3e4);border:1.5px solid var(--ac-popup-fg,#f9f3e4);border-radius:999px;padding:8px 12px 7px 14px;transition:background .2s,color .2s}
+        .ac-popup__role-link svg{width:9px;height:9px}
+        .ac-popup__role-link:hover{background:var(--ac-popup-fg,#f9f3e4);color:var(--ac-popup-bg,#f44d33)}
         .ac-popup__actions{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:6px}
         .ac-popup__cta{display:inline-flex;align-items:center;gap:10px;font:600 17px/1 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.02em;text-decoration:none;color:var(--ac-popup-bg,#f44d33);background:var(--ac-popup-fg,#f9f3e4);border:2px solid var(--ac-popup-fg,#f9f3e4);border-radius:999px;padding:11px 18px 10px 22px;transition:background .2s,color .2s}
         .ac-popup__cta svg{width:11px;height:11px;transition:transform .25s}
@@ -448,6 +455,8 @@ window.addEventListener('load', () => {
             .ac-popup__title{font-size:40px}
             .ac-popup__text{font-size:15px}
             .ac-popup__close{top:10px;right:10px;background:var(--ac-popup-bg,#f44d33);border-radius:999px}
+            .ac-popup__roles li{grid-template-columns:minmax(0,1fr)}
+            .ac-popup__role-link{grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}
         }
         @media (prefers-reduced-motion:reduce){.ac-popup__backdrop,.ac-popup__panel{animation:none}}
     `;
@@ -490,6 +499,8 @@ window.addEventListener('load', () => {
         popup.style.setProperty('--ac-popup-bg', style.backgroundColor);
         popup.style.setProperty('--ac-popup-fg', style.color);
     }
+
+    const ARROW_SVG = '<svg viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M8.45 9.82h2V.33H.96v2h6.07L.26 9.11l1.41 1.41 6.78-6.78v6.08Z" fill="currentColor"/></svg>';
 
     function buildPopup(data) {
         const popup = el('div', 'ac-popup');
@@ -538,14 +549,37 @@ window.addEventListener('load', () => {
             });
         }
 
+        // Roles (hiring pop-ups): title, type · details · deadline, and a link to the job description
+        const roles = data.roles || [];
+        if (roles.length) {
+            const list = body.appendChild(el('ul', 'ac-popup__roles'));
+            list.setAttribute('aria-label', 'Open roles');
+            roles.forEach(role => {
+                const item = list.appendChild(el('li'));
+                item.appendChild(el('span', 'ac-popup__role-title', role.title));
+                const deadline = role.applyBy ? `Apply by ${dayjs(new Date(role.applyBy)).format('D MMM YYYY')}` : '';
+                const meta = [role.type, role.details, deadline].filter(Boolean).join(' · ');
+                if (meta) item.appendChild(el('span', 'ac-popup__role-meta', meta));
+                const link = item.appendChild(el('a', 'ac-popup__role-link', 'Job description'));
+                link.href = role.link;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.setAttribute('aria-label', `${role.title}: job description (opens in a new tab)`);
+                link.insertAdjacentHTML('beforeend', ARROW_SVG);
+            });
+        }
+
         const actions = body.appendChild(el('div', 'ac-popup__actions'));
-        const cta = actions.appendChild(el('a', 'ac-popup__cta'));
-        cta.href = data.buttonLink;
-        cta.appendChild(el('span', '', data.buttonLabel || 'Learn more'));
-        cta.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M8.45 9.82h2V.33H.96v2h6.07L.26 9.11l1.41 1.41 6.78-6.78v6.08Z" fill="currentColor"/></svg>');
-        if (/^https?:\/\//.test(data.buttonLink) && !data.buttonLink.includes(location.hostname)) {
-            cta.target = '_blank';
-            cta.rel = 'noopener';
+        let cta = null;
+        if (data.buttonLink) {
+            cta = actions.appendChild(el('a', 'ac-popup__cta'));
+            cta.href = data.buttonLink;
+            cta.appendChild(el('span', '', data.buttonLabel || 'Learn more'));
+            cta.insertAdjacentHTML('beforeend', ARROW_SVG);
+            if (/^https?:\/\//.test(data.buttonLink) && !data.buttonLink.includes(location.hostname)) {
+                cta.target = '_blank';
+                cta.rel = 'noopener';
+            }
         }
         const later = actions.appendChild(el('button', 'ac-popup__later', 'Maybe later'));
         later.type = 'button';
@@ -568,6 +602,20 @@ window.addEventListener('load', () => {
         const sourceImg = source.querySelector('[data-ac-popup-image]');
         const imgSrc = sourceImg && !sourceImg.classList.contains('w-dyn-bind-empty') ? sourceImg.getAttribute('src') : '';
         data.image = imgSrc && !imgSrc.includes('placeholder') ? imgSrc : '';
+        // Career Roles picked in the pop-up's "Roles" field: keep open roles whose Apply By date hasn't passed
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        data.roles = [...source.querySelectorAll('[data-ac-role]')].map(role => {
+            const flag = role.querySelector('[data-ac-role-open]');
+            return {
+                title: role.dataset.title,
+                type: role.dataset.type,
+                applyBy: role.dataset.applyBy,
+                details: role.dataset.details,
+                link: role.dataset.link,
+                open: !!flag && !flag.classList.contains('w-condition-invisible'),
+            };
+        }).filter(role => role.title && role.link && role.open && !(role.applyBy && new Date(role.applyBy) < today));
         return data;
     }
 
@@ -598,7 +646,8 @@ window.addEventListener('load', () => {
         } catch (e) {
             return;
         }
-        if (!data || !data.headline || !data.buttonLink || !data.slug) return;
+        if (!data || !data.headline || !data.slug) return;
+        if (!data.buttonLink && !(data.roles && data.roles.length)) return;
 
         // Shown at most once per visit (session), and on at most Max Views separate visits per browser
         const maxViews = parseInt(data.maxViews, 10) > 0 ? parseInt(data.maxViews, 10) : POPUP_DEFAULT_MAX_VIEWS;
@@ -670,10 +719,12 @@ window.addEventListener('load', () => {
             if (e.target.closest('[data-popup-close]')) closePopup();
         });
         // Acting on the pop-up counts as done: don't show it to this visitor again
-        cta.addEventListener('click', () => {
-            writePopupViews(storageKey, maxViews);
-            closePopup();
-        });
+        if (cta) {
+            cta.addEventListener('click', () => {
+                writePopupViews(storageKey, maxViews);
+                closePopup();
+            });
+        }
 
         setTimeout(openPopup, POPUP_DELAY);
     }
