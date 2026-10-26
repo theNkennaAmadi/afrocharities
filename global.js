@@ -39,6 +39,8 @@ window.AfroEvents = (() => {
                 buttonLabel: d.buttonLabel,
                 image: imgSrc && !imgSrc.includes('placeholder') ? imgSrc : '',
                 hasRecap: !!flag && !flag.classList.contains('w-condition-invisible'),
+                programSlug: d.programSlug,
+                programName: d.programName,
             };
         }).filter(ev => ev.slug && ev.name && !isNaN(new Date(ev.date)));
     }
@@ -99,6 +101,7 @@ window.AfroEvents = (() => {
                             <div>${escapeHtml(ev.venue)}</div>
                         </div>` : ''}
                     </div>
+                    ${ev.programSlug && ev.programName ? `<a class="ac-event-program" href="/programs/${escapeHtml(ev.programSlug)}">Part of ${escapeHtml(ev.programName)} →</a>` : ''}
                     <div class="upcoming-event-details"><h3>${name}</h3></div>
                     ${ev.host ? `<p class="upcoming-event-host">Hosted by ${escapeHtml(ev.host)}</p>` : ''}
                     ${ev.summary ? `<p>${escapeHtml(ev.summary)}</p>` : ''}
@@ -112,9 +115,30 @@ window.AfroEvents = (() => {
         `;
     }
 
+    const STYLES = `
+        .ac-event-program{display:inline-block;margin:0 0 6px;font:600 13px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:inherit;text-decoration:underline;text-underline-offset:3px}
+        .ac-program-empty{margin:0 0 32px;opacity:.75}
+        .ac-program-past{list-style:none;padding:0;margin:0 0 32px;border-top:1px solid currentColor}
+        .ac-program-past li{display:grid;grid-template-columns:9rem minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid currentColor}
+        .ac-program-past .ac-past-date{font:600 14px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase}
+        .ac-program-past .ac-past-name{font:400 20px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase}
+        .ac-program-past a{font:600 14px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase;color:inherit;white-space:nowrap}
+        [data-program-events="upcoming"]{margin-bottom:32px}
+        @media (max-width:767px){.ac-program-past li{grid-template-columns:minmax(0,1fr)}}
+    `;
+
+    function injectStyles() {
+        if (document.getElementById('ac-events-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'ac-events-styles';
+        style.textContent = STYLES;
+        document.head.appendChild(style);
+    }
+
     // Fill an "upcoming events" wrapper. Leaves the existing "no events" content in place when there are none.
     async function renderUpcoming(wrapper) {
         if (!wrapper) return [];
+        injectStyles();
         const events = upcoming(await load());
         if (events.length) wrapper.innerHTML = events.map(cardHtml).join('');
         return events;
@@ -145,7 +169,54 @@ window.AfroEvents = (() => {
         });
     }
 
-    return {load, upcoming, cardHtml, renderUpcoming, filterArchive};
+    // Program pages (/programs/<slug>): list the events linked to this program via the event's "Program" field
+    async function renderProgramPage() {
+        const match = location.pathname.match(/^\/programs\/([^/]+)\/?$/);
+        const upcomingWrap = document.querySelector('[data-program-events="upcoming"]');
+        const pastWrap = document.querySelector('[data-program-events="past"]');
+        if (!match || !upcomingWrap) return;
+        injectStyles();
+        const events = (await load()).filter(ev => ev.programSlug === match[1]);
+        const next = upcoming(events);
+        const past = events.filter(ev => !isUpcoming(ev)).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        upcomingWrap.innerHTML = next.length
+            ? next.map(cardHtml).join('')
+            : '<p class="ac-program-empty">No upcoming events right now. Subscribe to our newsletter to hear about the next one.</p>';
+
+        if (pastWrap) {
+            const pastHeading = document.querySelector('[data-program-events-heading="past"]');
+            if (past.length) {
+                pastWrap.innerHTML = `<ul class="ac-program-past">${past.map(ev => {
+                    const link = ev.hasRecap ? `/event-recaps/${escapeHtml(ev.slug)}` : (ev.link ? escapeHtml(ev.link) : '');
+                    const external = !ev.hasRecap && ev.link ? ' target="_blank" rel="noopener"' : '';
+                    return `<li>
+                        <span class="ac-past-date">${escapeHtml(dayjs(new Date(ev.date)).format('D MMM YYYY'))}</span>
+                        <span class="ac-past-name">${escapeHtml(ev.name)}</span>
+                        ${link ? `<a href="${link}"${external}>${ev.hasRecap ? 'Recap' : 'Details'} →</a>` : '<span></span>'}
+                    </li>`;
+                }).join('')}</ul>`;
+            } else {
+                pastWrap.remove();
+                if (pastHeading) pastHeading.remove();
+            }
+        }
+    }
+
+    // Programs page: add a button on each program linking to its own page
+    function addProgramPageButtons() {
+        document.querySelectorAll('.btns-link-wrapper[data-program-slug]').forEach(row => {
+            const slug = row.getAttribute('data-program-slug');
+            if (!slug || row.querySelector('.ac-program-page-btn')) return;
+            row.insertAdjacentHTML('afterbegin', `
+                <a href="/programs/${escapeHtml(slug)}" class="pill-btn w-inline-block ac-program-page-btn">
+                    <div>Explore the Program</div>
+                    <div class="pill-btn-icon"><div class="embed w-embed">${ICON_ARROW}</div></div>
+                </a>`);
+        });
+    }
+
+    return {load, upcoming, cardHtml, renderUpcoming, filterArchive, renderProgramPage, addProgramPageButtons};
 })();
 
 
@@ -589,6 +660,9 @@ window.addEventListener('load', () => {
     }
 
     initSitePopup();
+
+    window.AfroEvents.renderProgramPage();
+    window.AfroEvents.addProgramPageButtons();
 
 
 
