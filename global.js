@@ -7,6 +7,147 @@ import ScrollTrigger from 'gsap/ScrollTrigger'
 gsap.registerPlugin(ScrollTrigger)
 gsap.config({nullTargetWarn: false});
 
+// Events: managed in the Webflow CMS ("Event Recaps" collection) and rendered on the internal /events-data page
+// (replaces the old Eventbrite feed). Defined at top level so the page scripts (main.js, event.js, program.js)
+// can use it from their DOMContentLoaded/load handlers.
+window.AfroEvents = (() => {
+    const DATA_URL = '/events-data';
+    const CACHE_KEY = 'acEventsData';
+    const CACHE_MS = 10 * 60 * 1000;
+
+    const ICON_DATE = '<svg width="100%" height="100%" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.04688 6V20C3.04688 20.5304 3.25759 21.0391 3.63266 21.4142C4.00773 21.7893 4.51644 22 5.04688 22H19.0469C19.5773 22 20.086 21.7893 20.4611 21.4142C20.8362 21.0391 21.0469 20.5304 21.0469 20V6C21.0469 5.46957 20.8362 4.96086 20.4611 4.58579C20.086 4.21071 19.5773 4 19.0469 4H17.0469V2H15.0469V4H9.04688V2H7.04688V4H5.04688C4.51644 4 4.00773 4.21071 3.63266 4.58579C3.25759 4.96086 3.04688 5.46957 3.04688 6ZM19.0469 20H5.04688V8H19.0469V20Z" fill="currentColor"/></svg>';
+    const ICON_PLACE = '<svg width="100%" height="100%" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.0469 14C14.2529 14 16.0469 12.206 16.0469 10C16.0469 7.794 14.2529 6 12.0469 6C9.84094 6 8.04694 7.794 8.04694 10C8.04694 12.206 9.84094 14 12.0469 14ZM12.0469 8C13.1499 8 14.0469 8.897 14.0469 10C14.0469 11.103 13.1499 12 12.0469 12C10.9439 12 10.0469 11.103 10.0469 10C10.0469 8.897 10.9439 8 12.0469 8Z" fill="currentColor"/><path d="M11.467 21.814C11.6362 21.9349 11.839 21.9998 12.047 21.9998C12.2549 21.9998 12.4577 21.9349 12.627 21.814C12.931 21.599 20.076 16.44 20.047 10C20.047 5.589 16.458 2 12.047 2C7.63596 2 4.04696 5.589 4.04696 9.995C4.01796 16.44 11.163 21.599 11.467 21.814ZM12.047 4C15.356 4 18.047 6.691 18.047 10.005C18.068 14.443 13.659 18.428 12.047 19.735C10.436 18.427 6.02596 14.441 6.04696 10C6.04696 6.691 8.73796 4 12.047 4Z" fill="currentColor"/></svg>';
+    const ICON_ARROW = '<svg width="100%" height="100%" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.44968 9.81678L10.4494 9.81678L10.4494 0.331654H0.964245V2.33135H7.03546L0.257138 9.10968L1.67135 10.5239L8.44968 3.74556L8.44968 9.81678Z" fill="currentColor"/></svg>';
+
+    const escapeHtml = value => String(value || '').replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
+
+    function parse(doc) {
+        return [...doc.querySelectorAll('[data-ac-event]')].map(el => {
+            const d = el.dataset;
+            const img = el.querySelector('[data-ac-event-image]');
+            const imgSrc = img && !img.classList.contains('w-dyn-bind-empty') ? img.getAttribute('src') : '';
+            const flag = el.querySelector('[data-ac-event-has-recap]');
+            return {
+                slug: d.slug,
+                name: d.name,
+                date: d.date, // e.g. "September 23, 2020"
+                time: d.time,
+                venue: d.venue,
+                host: d.host,
+                summary: d.summary,
+                link: d.link,
+                buttonLabel: d.buttonLabel,
+                image: imgSrc && !imgSrc.includes('placeholder') ? imgSrc : '',
+                hasRecap: !!flag && !flag.classList.contains('w-condition-invisible'),
+            };
+        }).filter(ev => ev.slug && ev.name && !isNaN(new Date(ev.date)));
+    }
+
+    async function load() {
+        try {
+            const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+            if (cached && Date.now() - cached.time < CACHE_MS) return cached.events;
+        } catch (e) {
+            // No session storage: fetch below
+        }
+        try {
+            const response = await fetch(DATA_URL, {credentials: 'same-origin'});
+            if (!response.ok) return [];
+            const events = parse(new DOMParser().parseFromString(await response.text(), 'text/html'));
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({time: Date.now(), events}));
+            } catch (e) {
+                // Ignore: caching is only an optimisation
+            }
+            return events;
+        } catch (e) {
+            console.error('Error loading events:', e);
+            return [];
+        }
+    }
+
+    // An event counts as upcoming through the end of its day, then moves to the archive automatically
+    function isUpcoming(ev) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return new Date(ev.date) >= today;
+    }
+
+    const upcoming = events => events.filter(isUpcoming).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    function formatDate(ev) {
+        const day = dayjs(new Date(ev.date)).format('ddd D MMM YY');
+        return ev.time ? `${day} · ${ev.time}` : day;
+    }
+
+    function cardHtml(ev) {
+        const name = escapeHtml(ev.name);
+        const label = escapeHtml(ev.buttonLabel || 'RSVP Now');
+        const link = ev.link ? escapeHtml(ev.link) : (ev.hasRecap ? `/event-recaps/${escapeHtml(ev.slug)}` : '');
+        return `
+            <div class="upcoming-event-item">
+                ${ev.image ? `<div class="upcoming-event-img"><img class="no-width" src="${escapeHtml(ev.image)}" loading="eager" alt="${name}"></div>` : ''}
+                <div class="upcoming-event-content">
+                    <div class="upcoming-events-loc">
+                        <div class="upcoming-event-date-wrapper">
+                            <div class="event-icon"><div class="embed w-embed">${ICON_DATE}</div></div>
+                            <div>${escapeHtml(formatDate(ev))}</div>
+                        </div>
+                        ${ev.venue ? `
+                        <div class="upcoming-event-date-wrapper">
+                            <div class="event-icon"><div class="embed w-embed">${ICON_PLACE}</div></div>
+                            <div>${escapeHtml(ev.venue)}</div>
+                        </div>` : ''}
+                    </div>
+                    <div class="upcoming-event-details"><h3>${name}</h3></div>
+                    ${ev.host ? `<p class="upcoming-event-host">Hosted by ${escapeHtml(ev.host)}</p>` : ''}
+                    ${ev.summary ? `<p>${escapeHtml(ev.summary)}</p>` : ''}
+                    ${link ? `
+                    <a href="${link}" class="pill-btn w-inline-block"${ev.link ? ' target="_blank" rel="noopener"' : ''} aria-label="${label}: ${name}">
+                        <div>${label}</div>
+                        <div class="pill-btn-icon"><div class="embed w-embed">${ICON_ARROW}</div></div>
+                    </a>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // Fill an "upcoming events" wrapper. Leaves the existing "no events" content in place when there are none.
+    async function renderUpcoming(wrapper) {
+        if (!wrapper) return [];
+        const events = upcoming(await load());
+        if (events.length) wrapper.innerHTML = events.map(cardHtml).join('');
+        return events;
+    }
+
+    // Events page archive (Webflow list of the same collection): hide events that haven't happened yet,
+    // and point past events without a recap at their ticket/info link. Run before the archive Swiper starts.
+    async function filterArchive() {
+        const items = [...document.querySelectorAll('.v-content-item')];
+        if (!items.length) return;
+        const bySlug = new Map((await load()).map(ev => [ev.slug, ev]));
+        items.forEach(item => {
+            const link = item.querySelector('a[href*="/event-recaps/"]');
+            const slug = link && link.getAttribute('href').split('/event-recaps/')[1].replace(/[/?#].*$/, '');
+            const ev = bySlug.get(slug);
+            if (!ev) return;
+            if (isUpcoming(ev)) {
+                item.remove();
+            } else if (!ev.hasRecap) {
+                if (ev.link) {
+                    link.href = ev.link;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                } else {
+                    link.remove();
+                }
+            }
+        });
+    }
+
+    return {load, upcoming, cardHtml, renderUpcoming, filterArchive};
+})();
+
 
 
 
