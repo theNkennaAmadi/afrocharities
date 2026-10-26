@@ -124,6 +124,10 @@ window.AfroEvents = (() => {
         .ac-program-past .ac-past-name{font:400 20px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase}
         .ac-program-past a{font:600 14px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase;color:inherit;white-space:nowrap}
         [data-program-events="upcoming"]{margin-bottom:32px}
+        [data-program-events] .ac-event-program{display:none}
+        [data-program-events-section] .program-archive-content{width:min(100%,42.2vw);margin:0 auto}
+        [data-program-events-heading]{font-size:clamp(32px,3.4vw,52px);line-height:1;margin:0 0 24px}
+        @media (max-width:767px){[data-program-events-section] .program-archive-content{width:100%}}
         @media (max-width:767px){.ac-program-past li{grid-template-columns:minmax(0,1fr)}}
     `;
 
