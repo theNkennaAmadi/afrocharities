@@ -1,0 +1,30 @@
+mockups/site-popup.html
+  s_b23b62a540e34b::t_c37f817271b2e6 1-147,149-207,210-213,215-225,227-298
+  s_b23b62a540e34b::t_8c221a5b575bcd 226
+  s_b23b62a540e34b::t_ac9e027ca53d10 214
+  s_b23b62a540e34b::t_a49f08e93729f2 208-209
+  s_b23b62a540e34b::t_696db8e1f04fc8 148
+.gitignore
+  s_b23b62a540e34b::t_433ddcbc5b9925 25-27
+global.js
+  s_b23b62a540e34b::t_15057ee280e244 104-106
+  s_b23b62a540e34b::t_56ee9283e7e04c 320-328,334-364
+  s_b23b62a540e34b::t_535686ee35a304 330-333
+  s_b23b62a540e34b::t_629b84d37bec07 187-319,329,365-432
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a67894d293c837bd948d13b354bcf644417ef801",
+  "prompts": {},
+  "sessions": {
+    "s_b23b62a540e34b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3d1e745-752b-49c2-bdd7-926d7c54e900",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "theNkennaAmadi <nkenna@theblackpepperstudio.com>"
+    }
+  }
+}
