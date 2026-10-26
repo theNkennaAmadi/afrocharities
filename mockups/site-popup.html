@@ -93,6 +93,24 @@
   .ac-popup__meta dt { opacity: .7; min-width: 64px; }
   .ac-popup__meta dd { margin: 0; }
 
+  .ac-popup__roles { list-style: none; margin: 0; padding: 0; border-top: 1px solid rgba(249, 243, 228, .45); }
+  .ac-popup__roles[hidden] { display: none; }
+  .ac-popup__roles li {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid rgba(249, 243, 228, .45);
+  }
+  .ac-popup__role-title { font: 600 21px/1.1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+  .ac-popup__role-meta { grid-column: 1; font: 400 13.5px/1.4 var(--body); opacity: .85; }
+  .ac-popup__role-link {
+    grid-column: 2; grid-row: 1 / span 2; justify-self: end;
+    display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+    font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .03em; text-decoration: none;
+    color: var(--beige); border: 1.5px solid var(--beige); border-radius: 999px; padding: 8px 12px 7px 14px;
+    transition: background .2s, color .2s;
+  }
+  .ac-popup__role-link svg { width: 9px; height: 9px; }
+  .ac-popup__role-link:hover { background: var(--beige); color: var(--cinnabar); }
+
   .ac-popup__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 6px; }
   .ac-popup__cta {
     display: inline-flex; align-items: center; gap: 10px;
@@ -134,6 +152,8 @@
     .ac-popup__title { font-size: 40px; }
     .ac-popup__text { font-size: 15px; }
     .ac-popup__close { top: 10px; right: 10px; background: var(--cinnabar); border-radius: 999px; }
+    .ac-popup__roles li { grid-template-columns: minmax(0, 1fr); }
+    .ac-popup__role-link { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 6px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ac-popup__backdrop, .ac-popup__panel { animation: none; }
@@ -151,6 +171,7 @@
     <button type="button" data-example="event" aria-pressed="true">Event</button>
     <button type="button" data-example="giving" aria-pressed="false">Giving campaign</button>
     <button type="button" data-example="opening" aria-pressed="false">Building opening</button>
+    <button type="button" data-example="hiring" aria-pressed="false">We're hiring</button>
     <span class="sep" aria-hidden="true"></span>
     <button type="button" id="reopen">Show pop-up</button>
   </div>
@@ -185,6 +206,7 @@
       <h2 class="ac-popup__title" id="ac-popup-title"></h2>
       <p class="ac-popup__text" id="ac-popup-text"></p>
       <dl class="ac-popup__meta" id="ac-popup-meta"></dl>
+      <ul class="ac-popup__roles" id="ac-popup-roles" aria-label="Open roles" hidden></ul>
       <div class="ac-popup__actions">
         <a class="ac-popup__cta" id="ac-popup-cta" href="#">
           <span id="ac-popup-cta-label"></span>
@@ -224,8 +246,23 @@
       cta: "Plan Your Visit",
       image: "https://cdn.prod.website-files.com/6684eeeb2492ff79aa1ec2ef/66982c5ab16742ed9489e29f_Placeholder%20Image-3.webp",
       caption: ["1933", "The Upton Mansion, built in 1838. Courtesy Library of Congress/HABS"]
+    },
+    hiring: {
+      eyebrow: "We're hiring",
+      title: "Join Our Team",
+      text: "Help us care for the AFRO Archives and share 130 years of Black history with Baltimore and beyond.",
+      meta: [],
+      // Each role: title, short details, link to the full job description (Google Drive PDF)
+      roles: [
+        ["Archives Assistant", "Part-time · Apply by 30 Nov 2026", "https://drive.google.com/"],
+        ["Programs Coordinator", "Full-time · Reviewing applications on a rolling basis", "https://drive.google.com/"]
+      ],
+      cta: "How to Apply",
+      image: null
     }
   };
+
+  const ROLE_ICON = '<svg viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M8.45 9.82h2V.33H.96v2h6.07L.26 9.11l1.41 1.41 6.78-6.78v6.08Z" fill="currentColor"/></svg>';
 
   const popup = document.getElementById("ac-popup");
   const panel = popup.querySelector(".ac-popup__panel");
@@ -240,6 +277,15 @@
     const meta = document.getElementById("ac-popup-meta");
     meta.innerHTML = d.meta.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
     meta.hidden = d.meta.length === 0;
+    const roles = document.getElementById("ac-popup-roles");
+    const roleList = d.roles || [];
+    roles.innerHTML = roleList.map(([title, details, link]) => `
+      <li>
+        <span class="ac-popup__role-title">${title}</span>
+        <span class="ac-popup__role-meta">${details}</span>
+        <a class="ac-popup__role-link" href="${link}" target="_blank" rel="noopener" aria-label="${title}: job description (PDF, opens in a new tab)">Job description (PDF) ${ROLE_ICON}</a>
+      </li>`).join("");
+    roles.hidden = roleList.length === 0;
     panel.classList.toggle("no-image", !d.image);
     if (d.image) {
       const img = document.getElementById("ac-popup-img");
@@ -270,6 +316,7 @@
 
   popup.addEventListener("click", e => { if (e.target.closest("[data-popup-close]")) close(); });
   document.getElementById("ac-popup-cta").addEventListener("click", e => e.preventDefault());
+  document.getElementById("ac-popup-roles").addEventListener("click", e => { if (e.target.closest("a")) e.preventDefault(); });
 
   document.addEventListener("keydown", e => {
     if (popup.hidden) return;
