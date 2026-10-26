@@ -413,9 +413,9 @@ window.addEventListener('load', () => {
         .ac-popup{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px}
         .ac-popup[hidden]{display:none}
         .ac-popup__backdrop{position:absolute;inset:0;background:rgba(39,39,39,.55);animation:ac-popup-fade .35s ease both}
-        .ac-popup__panel{position:relative;width:min(880px,100%);max-height:calc(100vh - 48px);overflow:auto;display:grid;grid-template-columns:1fr 1.1fr;background:var(--cinnabar,#f44d33);color:var(--beige,#f9f3e4);border:2px solid var(--beige,#f9f3e4);outline:2px solid var(--cinnabar,#f44d33);animation:ac-popup-rise .5s cubic-bezier(.16,1,.3,1) both}
+        .ac-popup__panel{position:relative;width:min(880px,100%);max-height:calc(100vh - 48px);overflow:auto;display:grid;grid-template-columns:1fr 1.1fr;background:var(--ac-popup-bg,#f44d33);color:var(--ac-popup-fg,#f9f3e4);border:2px solid var(--ac-popup-fg,#f9f3e4);outline:2px solid var(--ac-popup-bg,#f44d33);animation:ac-popup-rise .5s cubic-bezier(.16,1,.3,1) both}
         .ac-popup__panel.is-text-only{grid-template-columns:1fr;width:min(620px,100%)}
-        .ac-popup__media{position:relative;margin:0;border-right:2px solid var(--beige,#f9f3e4);min-height:100%;background:#c9b9a0}
+        .ac-popup__media{position:relative;margin:0;border-right:2px solid var(--ac-popup-fg,#f9f3e4);min-height:100%;background:#c9b9a0}
         .ac-popup__media img{display:block;width:100%;height:100%;object-fit:cover}
         .ac-popup__caption{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:baseline;padding:10px 14px;background:linear-gradient(to top,rgba(39,39,39,.75),transparent);font:400 12px/1.35 "Worksans Variablefont Wght",sans-serif}
         .ac-popup__caption b{font:600 14px/1 Vtctatsuro,sans-serif}
@@ -423,31 +423,31 @@ window.addEventListener('load', () => {
         .ac-popup__eyebrow{font:italic 400 24px/1.1 Instrumentserif,serif;margin:0}
         .ac-popup__title{font:700 clamp(40px,5.2vw,64px)/.9 Vtctatsuro,sans-serif;text-transform:uppercase;margin:0;color:inherit}
         .ac-popup__text{font:400 16px/1.5 "Worksans Variablefont Wght",sans-serif;margin:0;max-width:44ch;color:inherit}
-        .ac-popup__meta{display:grid;gap:6px;margin:0;padding:14px 0 0;border-top:1px solid rgba(249,243,228,.45);font:600 15px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+        .ac-popup__meta{display:grid;gap:6px;margin:0;padding:14px 0 0;border-top:1px solid color-mix(in srgb,var(--ac-popup-fg,#f9f3e4) 45%,transparent);font:600 15px/1.2 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.02em}
         .ac-popup__meta div{display:flex;gap:10px}
         .ac-popup__meta dt{opacity:.7;min-width:64px}
         .ac-popup__meta dd{margin:0}
         .ac-popup__actions{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:6px}
-        .ac-popup__cta{display:inline-flex;align-items:center;gap:10px;font:600 17px/1 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.02em;text-decoration:none;color:var(--cinnabar,#f44d33);background:var(--beige,#f9f3e4);border:2px solid var(--beige,#f9f3e4);border-radius:999px;padding:11px 18px 10px 22px;transition:background .2s,color .2s}
+        .ac-popup__cta{display:inline-flex;align-items:center;gap:10px;font:600 17px/1 Vtctatsuro,sans-serif;text-transform:uppercase;letter-spacing:.02em;text-decoration:none;color:var(--ac-popup-bg,#f44d33);background:var(--ac-popup-fg,#f9f3e4);border:2px solid var(--ac-popup-fg,#f9f3e4);border-radius:999px;padding:11px 18px 10px 22px;transition:background .2s,color .2s}
         .ac-popup__cta svg{width:11px;height:11px;transition:transform .25s}
-        .ac-popup__cta:hover{background:transparent;color:var(--beige,#f9f3e4)}
+        .ac-popup__cta:hover{background:transparent;color:var(--ac-popup-fg,#f9f3e4)}
         .ac-popup__cta:hover svg{transform:translate(2px,-2px)}
         .ac-popup__later{font:400 14px/1 "Worksans Variablefont Wght",sans-serif;color:inherit;background:none;border:0;padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
         .ac-popup__close{position:absolute;top:14px;right:16px;z-index:2;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;color:inherit;cursor:pointer;padding:6px;font:600 13px/1 Vtctatsuro,sans-serif;text-transform:uppercase}
         .ac-popup__close svg{width:20px;height:20px}
-        .ac-popup__panel :focus-visible{outline:2px solid var(--beige,#f9f3e4);outline-offset:3px}
+        .ac-popup__panel :focus-visible{outline:2px solid var(--ac-popup-fg,#f9f3e4);outline-offset:3px}
         .ac-popup__cta:focus-visible{outline-color:var(--black-alt,#272727)}
         @keyframes ac-popup-fade{from{opacity:0}}
         @keyframes ac-popup-rise{from{opacity:0;transform:translateY(24px) scale(.98)}}
         @media (max-width:767px){
             .ac-popup{padding:0;align-items:end}
             .ac-popup__panel,.ac-popup__panel.is-text-only{grid-template-columns:1fr;width:100%;max-height:92vh;border-width:2px 0 0;outline:0}
-            .ac-popup__media{border-right:0;border-bottom:2px solid var(--beige,#f9f3e4);height:190px}
+            .ac-popup__media{border-right:0;border-bottom:2px solid var(--ac-popup-fg,#f9f3e4);height:190px}
             .ac-popup__body{padding:28px 22px 30px;gap:14px}
             .ac-popup__eyebrow{font-size:20px}
             .ac-popup__title{font-size:40px}
             .ac-popup__text{font-size:15px}
-            .ac-popup__close{top:10px;right:10px;background:var(--cinnabar,#f44d33);border-radius:999px}
+            .ac-popup__close{top:10px;right:10px;background:var(--ac-popup-bg,#f44d33);border-radius:999px}
         }
         @media (prefers-reduced-motion:reduce){.ac-popup__backdrop,.ac-popup__panel{animation:none}}
     `;
@@ -475,6 +475,20 @@ window.addEventListener('load', () => {
         if (className) node.className = className;
         if (text) node.textContent = text;
         return node;
+    }
+
+    // Match the pop-up to the page's own colour (each page sets its nav colour: cinnabar, guava, violet, blue, pine).
+    // Very light navs (e.g. the white FAQ header) keep the default cinnabar so the pop-up still stands out.
+    function applyPageColours(popup) {
+        const nav = document.querySelector('.header .nav') || document.querySelector('.nav');
+        if (!nav) return;
+        const style = getComputedStyle(nav);
+        const rgb = (style.backgroundColor.match(/[\d.]+/g) || []).map(Number);
+        if (rgb.length < 3 || (rgb.length === 4 && rgb[3] === 0)) return;
+        const luminance = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+        if (luminance > 0.75) return;
+        popup.style.setProperty('--ac-popup-bg', style.backgroundColor);
+        popup.style.setProperty('--ac-popup-fg', style.color);
     }
 
     function buildPopup(data) {
@@ -605,6 +619,7 @@ window.addEventListener('load', () => {
         }
 
         const {popup, panel, cta} = buildPopup(data);
+        applyPageColours(popup);
         document.body.appendChild(popup);
         let lastFocus = null;
 
