@@ -101,8 +101,15 @@ window.addEventListener('load', () => {
         }
     }
 
-    if (document.querySelector('.header')) {
-        new Nav(document.querySelector('.header'));
+    // Some pages (FAQ, event/program templates) use an alternate header with no slide-out menu
+    const navHeader = document.querySelector('.header');
+    if (navHeader && navHeader.querySelector('.nav-list') && navHeader.querySelector('.nav-menu-btn')) {
+        try {
+            new Nav(navHeader);
+        } catch (e) {
+            // Never let the menu stop the rest of the site scripts (pop-up, newsletter, etc.)
+            console.error('Nav init failed:', e);
+        }
     }
 
     function initImageReveal() {
