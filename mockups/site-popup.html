@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site Pop-up — Design Mockup</title>
+<style>
+  @font-face { font-family: "Vtctatsuro"; font-weight: 400; src: url("https://cdn.prod.website-files.com/6682ac3fcbfbf769ae934a2b/6682ae15d3e924802e5274d5_VTCTatsuro-Regular.woff2") format("woff2"); }
+  @font-face { font-family: "Vtctatsuro"; font-weight: 600; src: url("https://cdn.prod.website-files.com/6682ac3fcbfbf769ae934a2b/6682ae1539a56b7810cbda61_VTCTatsuro-SemiBold.woff2") format("woff2"); }
+  @font-face { font-family: "Vtctatsuro"; font-weight: 700; src: url("https://cdn.prod.website-files.com/6682ac3fcbfbf769ae934a2b/6682ae15e42a1882e7754530_VTCTatsuro-Bold.woff2") format("woff2"); }
+  @font-face { font-family: "Worksans"; font-weight: 100 900; src: url("https://cdn.prod.website-files.com/6682ac3fcbfbf769ae934a2b/6682ae159aa39c8e444b95a4_WorkSans-VariableFont_wght.woff2") format("woff2"); }
+  @font-face { font-family: "Instrumentserif"; font-style: italic; src: url("https://cdn.prod.website-files.com/6682ac3fcbfbf769ae934a2b/6682be50e57e17a2131bc2fd_InstrumentSerif-Italic.woff2") format("woff2"); }
+
+  :root {
+    --beige: #f9f3e4;
+    --light-tan: #ffe9d1;
+    --cinnabar: #f44d33;
+    --black-alt: #272727;
+    --display: "Vtctatsuro", "Arial Narrow", sans-serif;
+    --body: "Worksans", system-ui, sans-serif;
+    --accent: "Instrumentserif", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--beige); color: var(--black-alt); font-family: var(--body); }
+
+  /* ---------- Mockup chrome (not part of the component) ---------- */
+  .mock-bar {
+    position: sticky; top: 0; z-index: 1;
+    display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: var(--black-alt); color: var(--beige); font-size: 13px;
+  }
+  .mock-bar strong { font-family: var(--display); font-weight: 600; font-size: 18px; text-transform: uppercase; letter-spacing: .02em; }
+  .mock-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .mock-controls button {
+    font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .03em;
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--beige);
+    background: transparent; color: var(--beige); cursor: pointer;
+  }
+  .mock-controls button[aria-pressed="true"] { background: var(--beige); color: var(--black-alt); }
+  .mock-controls .sep { width: 1px; height: 22px; background: #555; margin: 0 4px; }
+  .mock-note { font-size: 12px; opacity: .75; }
+
+  /* Fake page behind the pop-up so it reads in context */
+  .fake-page { display: grid; grid-template-columns: 76px 1fr; min-height: calc(100vh - 56px); }
+  .fake-nav {
+    background: var(--cinnabar); color: var(--beige); display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; padding: 28px 8px; font: 600 13px/1.1 var(--display); text-transform: uppercase; text-align: center;
+  }
+  .fake-nav .logo { font-size: 20px; line-height: .95; font-weight: 700; }
+  .fake-hero { display: grid; grid-template-columns: 1fr 1fr; }
+  .fake-hero .copy { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; }
+  .fake-hero h1 { font: 700 clamp(48px, 7vw, 96px)/.9 var(--display); text-transform: uppercase; margin: 12px 0; }
+  .fake-hero p { font: 400 18px/1.3 var(--display); max-width: 420px; }
+  .fake-hero .imgs { background: repeating-linear-gradient(135deg, #f7a08f 0 12px, #f6b2a4 12px 24px); opacity: .7; }
+
+  /* ---------- The pop-up component ---------- */
+  .ac-popup {
+    position: fixed; inset: 0; z-index: 1000;
+    display: grid; place-items: center; padding: 24px;
+  }
+  .ac-popup[hidden] { display: none; }
+  .ac-popup__backdrop {
+    position: absolute; inset: 0; background: rgba(39, 39, 39, .55);
+    animation: fade .35s ease both;
+  }
+  .ac-popup__panel {
+    position: relative; width: min(880px, 100%); max-height: calc(100vh - 48px); overflow: auto;
+    display: grid; grid-template-columns: 1fr 1.1fr;
+    background: var(--cinnabar); color: var(--beige);
+    border: 2px solid var(--beige); outline: 2px solid var(--cinnabar);
+    animation: rise .5s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  .ac-popup__panel.no-image { grid-template-columns: 1fr; width: min(620px, 100%); }
+  .ac-popup__panel.no-image .ac-popup__media { display: none; }
+
+  .ac-popup__media { position: relative; margin: 0; border-right: 2px solid var(--beige); min-height: 100%; background: #c9b9a0; }
+  .ac-popup__media img { display: block; width: 100%; height: 100%; object-fit: cover; filter: grayscale(.15); }
+  .ac-popup__caption {
+    position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; align-items: baseline;
+    padding: 10px 14px; background: linear-gradient(to top, rgba(39,39,39,.75), transparent);
+    color: var(--beige); font: 400 12px/1.35 var(--body);
+  }
+  .ac-popup__caption b { font: 600 14px/1 var(--display); }
+
+  .ac-popup__body { display: flex; flex-direction: column; gap: 18px; padding: 64px 40px 40px; }
+  .ac-popup__eyebrow { font: italic 400 24px/1.1 var(--accent); margin: 0; }
+  .ac-popup__title { font: 700 clamp(40px, 5.2vw, 64px)/.9 var(--display); text-transform: uppercase; margin: 0; letter-spacing: -.005em; }
+  .ac-popup__text { font: 400 16px/1.5 var(--body); margin: 0; max-width: 44ch; }
+  .ac-popup__meta { display: grid; gap: 6px; margin: 0; padding: 14px 0 0; border-top: 1px solid rgba(249, 243, 228, .45); font: 600 15px/1.2 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+  .ac-popup__meta[hidden] { display: none; }
+  .ac-popup__meta div { display: flex; gap: 10px; }
+  .ac-popup__meta dt { opacity: .7; min-width: 64px; }
+  .ac-popup__meta dd { margin: 0; }
+
+  .ac-popup__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 6px; }
+  .ac-popup__cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    font: 600 17px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; text-decoration: none;
+    color: var(--cinnabar); background: var(--beige); border: 2px solid var(--beige); border-radius: 999px; padding: 11px 18px 10px 22px;
+    transition: background .2s, color .2s;
+  }
+  .ac-popup__cta svg { width: 11px; height: 11px; transition: transform .25s; }
+  .ac-popup__cta:hover { background: transparent; color: var(--beige); }
+  .ac-popup__cta:hover svg { transform: translate(2px, -2px); }
+  .ac-popup__later {
+    font: 400 14px/1 var(--body); color: var(--beige); background: none; border: 0; padding: 4px 0; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+
+  .ac-popup__close {
+    position: absolute; top: 14px; right: 16px; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: none; border: 0; color: var(--beige); cursor: pointer; padding: 6px;
+    font: 600 13px/1 var(--display); text-transform: uppercase;
+  }
+  .ac-popup__close svg { width: 20px; height: 20px; }
+  .ac-popup__panel :focus-visible { outline: 2px solid var(--beige); outline-offset: 3px; }
+  .ac-popup__cta:focus-visible { outline-color: var(--black-alt); }
+
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(24px) scale(.98); } }
+
+  @media (max-width: 767px) {
+    .fake-page { grid-template-columns: 1fr; }
+    .fake-nav { flex-direction: row; padding: 14px 18px; }
+    .fake-hero { grid-template-columns: 1fr; }
+    .fake-hero .imgs { min-height: 200px; }
+    .ac-popup { padding: 0; align-items: end; }
+    .ac-popup__panel, .ac-popup__panel.no-image { grid-template-columns: 1fr; width: 100%; max-height: 92vh; border-width: 2px 0 0; outline: 0; }
+    .ac-popup__media { border-right: 0; border-bottom: 2px solid var(--beige); height: 190px; }
+    .ac-popup__body { padding: 28px 22px 30px; gap: 14px; }
+    .ac-popup__eyebrow { font-size: 20px; }
+    .ac-popup__title { font-size: 40px; }
+    .ac-popup__text { font-size: 15px; }
+    .ac-popup__close { top: 10px; right: 10px; background: var(--cinnabar); border-radius: 999px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ac-popup__backdrop, .ac-popup__panel { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-bar" role="region" aria-label="Mockup controls">
+  <div>
+    <strong>Site pop-up — design mockup</strong>
+    <div class="mock-note">Sample content only: event dates, opening hours and copy are placeholders. Esc or ✕ closes; Tab stays inside the pop-up.</div>
+  </div>
+  <div class="mock-controls">
+    <button type="button" data-example="event" aria-pressed="true">Event</button>
+    <button type="button" data-example="giving" aria-pressed="false">Giving campaign</button>
+    <button type="button" data-example="opening" aria-pressed="false">Building opening</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" id="reopen">Show pop-up</button>
+  </div>
+</div>
+
+<div class="fake-page" aria-hidden="true">
+  <div class="fake-nav"><span>Menu</span><span class="logo">Afro<br>Charities</span><span>Donate</span></div>
+  <div class="fake-hero">
+    <div class="copy">
+      <span>EST. 1963</span>
+      <h1>Afro<br>Charities</h1>
+      <p>Afro Charities is a 501(c)3 organization that maintains and cares for the AFRO's archives.</p>
+    </div>
+    <div class="imgs"></div>
+  </div>
+</div>
+
+<!-- Pop-up: in Webflow this sits inside the nav component, bound to the one active "Site Pop-ups" item -->
+<div class="ac-popup" id="ac-popup" hidden>
+  <div class="ac-popup__backdrop" data-popup-close></div>
+  <div class="ac-popup__panel" role="dialog" aria-modal="true" aria-labelledby="ac-popup-title" aria-describedby="ac-popup-text">
+    <button type="button" class="ac-popup__close" data-popup-close aria-label="Close announcement">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 3l14 14M17 3L3 17"/></svg>
+      <span aria-hidden="true">Close</span>
+    </button>
+    <figure class="ac-popup__media">
+      <img id="ac-popup-img" src="" alt="">
+      <figcaption class="ac-popup__caption" id="ac-popup-caption"></figcaption>
+    </figure>
+    <div class="ac-popup__body">
+      <p class="ac-popup__eyebrow" id="ac-popup-eyebrow"></p>
+      <h2 class="ac-popup__title" id="ac-popup-title"></h2>
+      <p class="ac-popup__text" id="ac-popup-text"></p>
+      <dl class="ac-popup__meta" id="ac-popup-meta"></dl>
+      <div class="ac-popup__actions">
+        <a class="ac-popup__cta" id="ac-popup-cta" href="#">
+          <span id="ac-popup-cta-label"></span>
+          <svg viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M8.45 9.82h2V.33H.96v2h6.07L.26 9.11l1.41 1.41 6.78-6.78v6.08Z" fill="currentColor"/></svg>
+        </a>
+        <button type="button" class="ac-popup__later" data-popup-close>Maybe later</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Example CMS items: each maps 1:1 to the fields of the proposed "Site Pop-ups" collection.
+  const examples = {
+    event: {
+      eyebrow: "Upcoming event",
+      title: "Re-Reading the News",
+      text: "An evening conversation drawn from the AFRO archives, with artists and historians on documenting Black Baltimore.",
+      meta: [["Date", "Thu 13 Nov 2026"], ["Time", "6:00–8:00 PM"], ["Where", "The Upton Mansion"]],
+      cta: "RSVP Now",
+      image: "https://uploads-ssl.webflow.com/6684eeeb2492ff79aa1ec2ef/66c3968fe7a4072a61037a06_IMG_1654.webp",
+      caption: ["2023", "Afro Charities at Artscape"]
+    },
+    giving: {
+      eyebrow: "End-of-year giving",
+      title: "Keep 130 years of history in our hands",
+      text: "Your gift preserves the AFRO Archives and keeps them open to researchers, students and our community. Give before December 31 to support next year's work.",
+      meta: [],
+      cta: "Give Today",
+      image: null
+    },
+    opening: {
+      eyebrow: "Now open",
+      title: "The Upton Mansion",
+      text: "The permanent home of the AFRO Archives is open to visitors and researchers.",
+      meta: [["Wed–Fri", "10 AM – 5 PM"], ["Sat", "11 AM – 4 PM"], ["Where", "811 W. Lanvale St, Baltimore"]],
+      cta: "Plan Your Visit",
+      image: "https://cdn.prod.website-files.com/6684eeeb2492ff79aa1ec2ef/66982c5ab16742ed9489e29f_Placeholder%20Image-3.webp",
+      caption: ["1933", "The Upton Mansion, built in 1838. Courtesy Library of Congress/HABS"]
+    }
+  };
+
+  const popup = document.getElementById("ac-popup");
+  const panel = popup.querySelector(".ac-popup__panel");
+  let lastFocus = null;
+
+  function render(key) {
+    const d = examples[key];
+    document.getElementById("ac-popup-eyebrow").textContent = d.eyebrow;
+    document.getElementById("ac-popup-title").textContent = d.title;
+    document.getElementById("ac-popup-text").textContent = d.text;
+    document.getElementById("ac-popup-cta-label").textContent = d.cta;
+    const meta = document.getElementById("ac-popup-meta");
+    meta.innerHTML = d.meta.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+    meta.hidden = d.meta.length === 0;
+    panel.classList.toggle("no-image", !d.image);
+    if (d.image) {
+      const img = document.getElementById("ac-popup-img");
+      img.src = d.image;
+      img.alt = d.caption ? d.caption[1] : "";
+      document.getElementById("ac-popup-caption").innerHTML = d.caption ? `<b>${d.caption[0]}</b><span>${d.caption[1]}</span>` : "";
+    }
+  }
+
+  function focusables() {
+    return [...panel.querySelectorAll('a[href], button:not([disabled])')].filter(el => el.offsetParent !== null);
+  }
+
+  function open() {
+    lastFocus = document.activeElement;
+    popup.hidden = false;
+    document.body.style.overflow = "hidden";
+    // Restart the entrance animation
+    panel.style.animation = "none"; panel.offsetHeight; panel.style.animation = "";
+    focusables()[0]?.focus();
+  }
+
+  function close() {
+    popup.hidden = true;
+    document.body.style.overflow = "";
+    lastFocus?.focus();
+  }
+
+  popup.addEventListener("click", e => { if (e.target.closest("[data-popup-close]")) close(); });
+  document.getElementById("ac-popup-cta").addEventListener("click", e => e.preventDefault());
+
+  document.addEventListener("keydown", e => {
+    if (popup.hidden) return;
+    if (e.key === "Escape") { close(); return; }
+    if (e.key === "Tab") {
+      const els = focusables();
+      const first = els[0], last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  document.querySelectorAll("[data-example]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-example]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+      render(btn.dataset.example);
+      open();
+    });
+  });
+  document.getElementById("reopen").addEventListener("click", open);
+
+  render("event");
+  setTimeout(open, 600);
+</script>
+</body>
+</html>
