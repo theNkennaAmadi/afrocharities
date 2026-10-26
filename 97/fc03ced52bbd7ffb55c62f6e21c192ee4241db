@@ -1,0 +1,25 @@
+global.js
+  s_b23b62a540e34b::t_803b1b3a111793 10-150
+event.js
+  s_b23b62a540e34b::t_82491f6443fa9e 61,63,65-66,68
+program.js
+  s_b23b62a540e34b::t_82491f6443fa9e 28,30,32,34
+main.js
+  s_b23b62a540e34b::t_3e695a64a1d0df 12,14,19-20,450
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "97fc03ced52bbd7ffb55c62f6e21c192ee4241db",
+  "prompts": {},
+  "sessions": {
+    "s_b23b62a540e34b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3d1e745-752b-49c2-bdd7-926d7c54e900",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "theNkennaAmadi <nkenna@theblackpepperstudio.com>"
+    }
+  }
+}
