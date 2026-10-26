@@ -363,9 +363,16 @@ window.addEventListener('load', () => {
         }
         if (!data || !data.headline || !data.buttonLink || !data.slug) return;
 
+        // Shown at most once per visit (session), and on at most Max Views separate visits per browser
         const maxViews = parseInt(data.maxViews, 10) > 0 ? parseInt(data.maxViews, 10) : POPUP_DEFAULT_MAX_VIEWS;
         const storageKey = `acPopupViews:${data.slug}`;
+        const visitKey = `acPopupSeenThisVisit:${data.slug}`;
         if (readPopupViews(storageKey) >= maxViews) return;
+        try {
+            if (sessionStorage.getItem(visitKey)) return;
+        } catch (e) {
+            // No session storage: fall back to the per-browser cap only
+        }
 
         if (!document.getElementById('ac-popup-styles')) {
             const style = el('style');
@@ -409,6 +416,11 @@ window.addEventListener('load', () => {
             // Don't interrupt someone who already has the menu or another overlay open
             if (document.body.style.overflow === 'hidden') return;
             writePopupViews(storageKey, readPopupViews(storageKey) + 1);
+            try {
+                sessionStorage.setItem(visitKey, '1');
+            } catch (e) {
+                // Ignore: only affects the once-per-visit rule
+            }
             lastFocus = document.activeElement;
             popup.hidden = false;
             document.body.style.overflow = 'hidden';
