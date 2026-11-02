@@ -458,6 +458,12 @@ window.addEventListener('load', () => {
             .ac-popup__roles li{grid-template-columns:minmax(0,1fr)}
             .ac-popup__role-link{grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}
         }
+        [data-ac-popup]{display:none}
+        .ac-popup-preview{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;background:#ffe9d1;color:#272727}
+        .ac-popup-preview__title{font:700 clamp(40px,6vw,72px)/.9 Vtctatsuro,sans-serif;text-transform:uppercase;margin:0}
+        .ac-popup-preview__text{font:400 16px/1.5 "Worksans Variablefont Wght",sans-serif;margin:0;max-width:52ch}
+        .ac-popup-preview .ac-popup__cta{--ac-popup-fg:#f44d33;--ac-popup-bg:#ffe9d1;cursor:pointer}
+        .ac-popup-preview .ac-popup__cta:hover{color:#f44d33}
         @media (prefers-reduced-motion:reduce){.ac-popup__backdrop,.ac-popup__panel{animation:none}}
     `;
     const POPUP_DELAY = 1500;
@@ -593,6 +599,9 @@ window.addEventListener('load', () => {
     const POPUP_DATA_URL = '/site-popup';
     const POPUP_CACHE_KEY = 'acPopupData';
     const POPUP_CACHE_MS = 10 * 60 * 1000;
+    // Internal page (noindex, not linked) that renders the same CMS data and opens the pop-up on demand,
+    // ignoring the once-per-visit and Max Views limits, so it can be checked or shown to others.
+    const POPUP_PREVIEW_URL = '/popup-preview';
 
     function readPopupSource(root) {
         const source = root.querySelector('[data-ac-popup]');
@@ -638,34 +647,59 @@ window.addEventListener('load', () => {
         return data;
     }
 
+    function injectPopupStyles() {
+        if (document.getElementById('ac-popup-styles')) return;
+        const style = el('style');
+        style.id = 'ac-popup-styles';
+        style.textContent = POPUP_CSS;
+        document.head.appendChild(style);
+    }
+
+    function addPreviewControls(data, openPopup) {
+        const bar = document.body.appendChild(el('div', 'ac-popup-preview'));
+        bar.appendChild(el('p', 'ac-popup-preview__title', 'Pop-up preview'));
+        bar.appendChild(el('p', 'ac-popup-preview__text', data
+            ? `Showing the active Site Pop-up: “${data.headline}”. Only visible to people with this link.`
+            : 'No active Site Pop-up is published. Switch Active on for an item and publish to preview it here.'));
+        if (data) {
+            const again = bar.appendChild(el('button', 'ac-popup__cta', 'Show pop-up'));
+            again.type = 'button';
+            again.addEventListener('click', openPopup);
+        }
+    }
+
     async function initSitePopup() {
         if (location.pathname.startsWith(POPUP_DATA_URL)) return;
+        const preview = location.pathname.startsWith(POPUP_PREVIEW_URL);
         let data;
         try {
-            data = await loadPopupData();
+            data = preview ? readPopupSource(document) : await loadPopupData();
         } catch (e) {
             return;
         }
-        if (!data || !data.headline || !data.slug) return;
-        if (!data.buttonLink && !(data.roles && data.roles.length)) return;
+        const usable = data && data.headline && data.slug && (data.buttonLink || (data.roles && data.roles.length));
+        if (!usable) {
+            if (preview) {
+                injectPopupStyles();
+                addPreviewControls(null);
+            }
+            return;
+        }
 
         // Shown at most once per visit (session), and on at most Max Views separate visits per browser
         const maxViews = parseInt(data.maxViews, 10) > 0 ? parseInt(data.maxViews, 10) : POPUP_DEFAULT_MAX_VIEWS;
         const storageKey = `acPopupViews:${data.slug}`;
         const visitKey = `acPopupSeenThisVisit:${data.slug}`;
-        if (readPopupViews(storageKey) >= maxViews) return;
-        try {
-            if (sessionStorage.getItem(visitKey)) return;
-        } catch (e) {
-            // No session storage: fall back to the per-browser cap only
+        if (!preview) {
+            if (readPopupViews(storageKey) >= maxViews) return;
+            try {
+                if (sessionStorage.getItem(visitKey)) return;
+            } catch (e) {
+                // No session storage: fall back to the per-browser cap only
+            }
         }
 
-        if (!document.getElementById('ac-popup-styles')) {
-            const style = el('style');
-            style.id = 'ac-popup-styles';
-            style.textContent = POPUP_CSS;
-            document.head.appendChild(style);
-        }
+        injectPopupStyles();
 
         const {popup, panel, cta} = buildPopup(data);
         applyPageColours(popup);
@@ -702,11 +736,13 @@ window.addEventListener('load', () => {
         function openPopup() {
             // Don't interrupt someone who already has the menu or another overlay open
             if (document.body.style.overflow === 'hidden') return;
-            writePopupViews(storageKey, readPopupViews(storageKey) + 1);
-            try {
-                sessionStorage.setItem(visitKey, '1');
-            } catch (e) {
-                // Ignore: only affects the once-per-visit rule
+            if (!preview) {
+                writePopupViews(storageKey, readPopupViews(storageKey) + 1);
+                try {
+                    sessionStorage.setItem(visitKey, '1');
+                } catch (e) {
+                    // Ignore: only affects the once-per-visit rule
+                }
             }
             lastFocus = document.activeElement;
             popup.hidden = false;
@@ -721,12 +757,13 @@ window.addEventListener('load', () => {
         // Acting on the pop-up counts as done: don't show it to this visitor again
         if (cta) {
             cta.addEventListener('click', () => {
-                writePopupViews(storageKey, maxViews);
+                if (!preview) writePopupViews(storageKey, maxViews);
                 closePopup();
             });
         }
 
-        setTimeout(openPopup, POPUP_DELAY);
+        if (preview) addPreviewControls(data, openPopup);
+        setTimeout(openPopup, preview ? 300 : POPUP_DELAY);
     }
 
     initSitePopup();
